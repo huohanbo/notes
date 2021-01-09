@@ -1,61 +1,8 @@
 # 参考资料
 > [Spring参考文档](https://docs.spring.io/spring-framework/docs/current/reference/html/)
+> [Core Technologies](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#spring-core)
 
 --------------------------------------------------
-**Overview**	
-history, design philosophy, feedback, getting started.
-
-**Core**	
-IoC Container, Events, Resources, i18n, Validation, Data Binding, Type Conversion, SpEL, AOP.
-
-**Testing**	
-Mock Objects, TestContext Framework, Spring MVC Test, WebTestClient.
-
-**Data Access**	
-Transactions, DAO Support, JDBC, R2DBC, O/R Mapping, XML Marshalling.
-
-**Web Servlet**	
-Spring MVC, WebSocket, SockJS, STOMP Messaging.
-
-**Web Reactive**	
-Spring WebFlux, WebClient, WebSocket.
-
-**Integration**	
-Remoting, JMS, JCA, JMX, Email, Tasks, Scheduling, Caching.
-
-**Languages**	
-Kotlin, Groovy, Dynamic Languages.
-
---------------------------------------------------
-**总览**	
-历史，设计理念，反馈，入门。
-
-**核心**	
-IoC容器，事件，资源，i18n，验证，数据绑定，类型转换，SpEL，AOP。
-
-**测试**	
-模拟对象，TestContext框架，Spring MVC测试，WebTestClient。
-
-**数据访问**	
-事务，DAO支持，JDBC，R2DBC，O / R映射，XML编组。
-
-**Web Servlet**	
-Spring MVC，WebSocket，SockJS，STOMP消息传递。
-
-**网络反应**	
-Spring WebFlux，WebClient，WebSocket。
-
-**积分**	
-远程处理，JMS，JCA，JMX，电子邮件，任务，调度，缓存。
-
-**语言能力**	
-Kotlin，Groovy，动态语言。
-
---------------------------------------------------
-# [概述]
-
---------------------------------------------------
-# [核心]
 这一部分涵盖了Spring框架必不可少的所有技术，其中最重要的是控制反转（IoC）容器 和 面向方面的编程（AOP）技术。
 Spring还提供了与AspectJ的集成。
 
@@ -463,7 +410,7 @@ public class ExampleBean {
 </bean>
 ```
 要使用该功能（构造函数参数名称），必须在启用调试标志的情况下编译代码，以便Spring可以从构造函数中查找参数名称。
-如果您不能或不想使用debug标志编译代码，则可以使用 @ConstructorProperties JDK批注显式命名构造函数参数。然后，样本类必须如下所示：
+如果您不能或不想使用debug标志编译代码，则可以使用 @ConstructorProperties JDK注解显式命名构造函数参数。然后，样本类必须如下所示：
 ```
 package examples;
 
@@ -502,7 +449,7 @@ public class SimpleMovieLister {
 
 由于可以混合使用基于构造函数的DI和基于设定值的DI，因此将构造函数用于强制性依赖项并将setter方法或配置方法用于可选的依赖项是一个很好的经验法则。
 
-注意， 在setter方法上使用@Required批注可以使该属性成为必需的依赖项。但是，最好使用带有参数的程序验证的构造函数注入。
+注意， 在setter方法上使用@Required注解可以使该属性成为必需的依赖项。但是，最好使用带有参数的程序验证的构造函数注入。
 
 #### 依赖性解析过程
 容器执行bean依赖项解析，如下所示：
@@ -3106,7 +3053,7 @@ profile表达式允许表达更复杂的配置文件逻辑（例如production & 
 不能在不使用括号的情况下混合使用&and|运算符。例如， production & us-east | eu-central不是有效的表达式。它必须表示为 production & (us-east | eu-central)。
 
 可以将其@Profile用作元注释，以创建自定义的组合注释。
-以下示例定义了一个自定义 @Production批注，可以将其用作@Profile("production")的替代品：
+以下示例定义了一个自定义 @Production注解，可以将其用作@Profile("production")的替代品：
 ```
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -4614,7 +4561,7 @@ Spring AOP仅支持Spring Bean的方法执行连接点，因此您可以将切�
 
 切入点声明由两部分组成：一个包含名称和任何参数的方法签名，和一个切入点表达式，该切入点表达式精确确定我们感兴趣的方法。
 
-在AOP的@AspectJ批注样式中，常规方法定义提供了切入点签名，并通过使用@Pointcut注释指示切入点表达式（用作切入点签名的方法返回类型必须是void）。
+在AOP的@AspectJ注解样式中，常规方法定义提供了切入点签名，并通过使用@Pointcut注释指示切入点表达式（用作切入点签名的方法返回类型必须是void）。
 
 以下示例定义了一个名为anyOldTransfer的切入点，该切入点与任何名为transfer的方法的执行相匹配：
 ```
@@ -5604,17 +5551,334 @@ return buffer;
 Encoder负责释放其接收的数据缓冲区
 
 # 日志
+从Spring Framework 5.0开始，Spring在spring-jcl模块中实现了自己的Commons Logging桥。
+该实现检查类路径中是否存在Log4j 2.x API和SLF4J 1.7 API，并使用发现的第一个作为日志记录实现。
+如果Log4j 2.x和SLF4J都不可用，则回退到Java平台的核心日志记录设施（也称为JUL或java.util.logging）。
+将Log4j 2.x或Logback（或其他SLF4J提供程序）放入您的类路径中，而无需任何额外的桥接，并让框架自动适应您的选择。
+
+Spring的Commons Logging变体仅用于核心框架和扩展中的基础结构日志记录目的。
+对于应用程序代码中的日志记录需求，建议直接使用Log4j 2.x，SLF4J或JUL。
+
+Log实现可以通过检索org.apache.commons.logging.LogFactory如在下面的例子：
+```
+public class MyBean {
+    private final Log log = LogFactory.getLog(getClass());
+    // ...
+}
+```
 
 # 附录
 
-# [测试]
+## XML Schema
+此部分列出了与核心容器相关的XML模式。
 
-# [数据访问]
+### util Schema
+util标记处理常见的实用程序配置问题，例如配置集合，引用常量等。
+要在util架构中使用标签，您需要在Spring XML配置文件的顶部具有以下前导：
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util https://www.springframework.org/schema/util/spring-util.xsd">
 
-# [Web Servlet]
+        <!-- bean definitions here -->
 
-# [Web Reactive]
+</beans>
+```
 
-# [Integration]
+#### 使用 util：constant
+考虑以下bean定义：
+```
+<bean id="..." class="...">
+    <property name="isolation">
+        <bean id="java.sql.Connection.TRANSACTION_SERIALIZABLE"
+                class="org.springframework.beans.factory.config.FieldRetrievingFactoryBean" />
+    </property>
+</bean>
+```
 
-# [Languages]
+前面的配置使用SpringFactoryBean实现（ FieldRetrievingFactoryBean）将isolationbean上的属性的值设置为java.sql.Connection.TRANSACTION_SERIALIZABLE常量的值。
+这一切都很好，但是很冗长，并且（不必要地）向最终用户公开了Spring的内部管道。
+
+以下基于XML Schema的版本更加简洁，清楚地表达了开发人员的意图（“注入此常量值”），并且读起来更好：
+```
+<bean id="..." class="...">
+    <property name="isolation">
+        <util:constant static-field="java.sql.Connection.TRANSACTION_SERIALIZABLE"/>
+    </property>
+</bean>
+```
+
+#### 使用 util：property-path
+略
+
+#### 使用 util：properties
+使用PropertiesFactoryBean实例化一个java.util.Properties实例，该实例从提供的Resource位置加载值：
+```
+<!-- creates a java.util.Properties instance with values loaded from the supplied location -->
+
+<bean id="jdbcConfiguration" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+    <property name="location" value="classpath:com/foo/jdbc-production.properties"/>
+</bean>
+```
+
+以下示例使用一个util:properties元素来进行更简洁的表示：
+```
+<!-- creates a java.util.Properties instance with values loaded from the supplied location -->
+
+<util:properties id="jdbcConfiguration" location="classpath:com/foo/jdbc-production.properties"/>
+```
+
+#### 使用 util：list
+使用ListFactoryBean来创建java.util.List实例，并使用value中的值对sourceList进行初始化：
+```
+<!-- creates a java.util.List instance with values loaded from the supplied 'sourceList' -->
+
+<bean id="emails" class="org.springframework.beans.factory.config.ListFactoryBean">
+    <property name="sourceList">
+        <list>
+            <value>pechorin@hero.org</value>
+            <value>raskolnikov@slums.org</value>
+            <value>stavrogin@gov.org</value>
+            <value>porfiry@gov.org</value>
+        </list>
+    </property>
+</bean>
+```
+
+使用一个<util:list/>元素来进行更简洁的表示：
+```
+<!-- creates a java.util.List instance with the supplied values -->
+
+<util:list id="emails">
+    <value>pechorin@hero.org</value>
+    <value>raskolnikov@slums.org</value>
+    <value>stavrogin@gov.org</value>
+    <value>porfiry@gov.org</value>
+</util:list>
+```
+
+还可以List通过使用元素list-class上的属性来显式控制实例化和填充的类型的确切类型。
+例如，如果需要java.util.LinkedList实例化，则可以使用以下配置：
+```
+<util:list id="emails" list-class="java.util.LinkedList">
+    <value>jackshaftoe@vagabond.org</value>
+    <value>eliza@thinkingmanscrumpet.org</value>
+    <value>vanhoek@pirate.org</value>
+    <value>d'Arcachon@nemesis.org</value>
+</util:list>
+```
+如果未list-class提供任何属性，则容器自己选择一个List实现。
+
+#### 使用 util：map
+使用MapFactoryBeanMapFactoryBean实现来创建一个java.util.Map实例，该实例使用从提供的中获取的键值对进行初始化'sourceMap'：
+```
+<!-- creates a java.util.Map instance with values loaded from the supplied 'sourceMap' -->
+
+<bean id="emails" class="org.springframework.beans.factory.config.MapFactoryBean">
+    <property name="sourceMap">
+        <map>
+            <entry key="pechorin" value="pechorin@hero.org"/>
+            <entry key="raskolnikov" value="raskolnikov@slums.org"/>
+            <entry key="stavrogin" value="stavrogin@gov.org"/>
+            <entry key="porfiry" value="porfiry@gov.org"/>
+        </map>
+    </property>
+</bean>
+```
+
+使用<util:map/>元素来进行更简洁的表示：
+```
+<!-- creates a java.util.Map instance with the supplied key-value pairs -->
+<util:map id="emails">
+    <entry key="pechorin" value="pechorin@hero.org"/>
+    <entry key="raskolnikov" value="raskolnikov@slums.org"/>
+    <entry key="stavrogin" value="stavrogin@gov.org"/>
+    <entry key="porfiry" value="porfiry@gov.org"/>
+</util:map>
+```
+
+还可以通过使用属性'map-class'来显式控制实例化和填充的类型的确切类型。
+例如，如果我们确实需要java.util.TreeMap实例化，则可以使用以下配置：
+```
+<util:map id="emails" map-class="java.util.TreeMap">
+    <entry key="pechorin" value="pechorin@hero.org"/>
+    <entry key="raskolnikov" value="raskolnikov@slums.org"/>
+    <entry key="stavrogin" value="stavrogin@gov.org"/>
+    <entry key="porfiry" value="porfiry@gov.org"/>
+</util:map>
+```
+如果未'map-class'提供任何属性，则容器自行选择一个Map实现。
+
+#### 使用 util：set
+使用SetFactoryBean来创建java.util.Set实例，该实例使用从提供的中获取的值进行初始化sourceSet：
+```
+<!-- creates a java.util.Set instance with values loaded from the supplied 'sourceSet' -->
+<bean id="emails" class="org.springframework.beans.factory.config.SetFactoryBean">
+    <property name="sourceSet">
+        <set>
+            <value>pechorin@hero.org</value>
+            <value>raskolnikov@slums.org</value>
+            <value>stavrogin@gov.org</value>
+            <value>porfiry@gov.org</value>
+        </set>
+    </property>
+</bean>
+```
+
+使用一个<util:set/>元素来进行更简洁的表示：
+```
+<!-- creates a java.util.Set instance with the supplied values -->
+<util:set id="emails">
+    <value>pechorin@hero.org</value>
+    <value>raskolnikov@slums.org</value>
+    <value>stavrogin@gov.org</value>
+    <value>porfiry@gov.org</value>
+</util:set>
+```
+
+可以通过使用元素上的属性set-class来显式控制实例化和填充的类型的确切类型<util:set/>。
+例如，如果我们确实需要java.util.TreeSet实例化a，则可以使用以下配置：
+```
+<util:set id="emails" set-class="java.util.TreeSet">
+    <value>pechorin@hero.org</value>
+    <value>raskolnikov@slums.org</value>
+    <value>stavrogin@gov.org</value>
+    <value>porfiry@gov.org</value>
+</util:set>
+```
+
+如果未set-class提供任何属性，则容器选择一个Set实现。
+
+### aop Schema
+这些aop标记涉及在Spring中配置所有AOP，包括Spring自己的基于代理的AOP框架以及Spring与AspectJ AOP框架的集成。
+
+为了完整起见，要在aop架构中使用标记，您需要在Spring XML配置文件的顶部具有以下前导：
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/aop https://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!-- bean definitions here -->
+
+</beans>
+```
+
+### context Schema
+该context标签处理ApplicationContext的配置。
+
+以下代码段引用了正确的架构，以便context您可以使用命名空间中的元素：
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!-- bean definitions here -->
+
+</beans>
+```
+
+#### 使用 property-placeholder
+此元素激活${…​}占位符的替换，这些占位符针对指定的属性文件（作为Spring资源location）解析。
+
+此元素是PropertySourcesPlaceholderConfigurer为您设置的便捷机制。
+
+如果需要对特定PropertySourcesPlaceholderConfigurer设置进行更多控制，则可以自己将其显式定义为Bean。
+
+#### 使用 annotation-config
+此元素激活Spring基础结构以检测Bean类中的注释：
++ Spring的@Configuration模型
++ @Autowired/@Inject和@Value
++ JSR-250的@Resource，@PostConstruct和@PreDestroy（如果可用）
++ JPA@PersistenceContext和@PersistenceUnit（如果有）
++ Spring的@EventListener
+
+或者，您可以选择BeanPostProcessors 为这些注释显式激活个人。
+
+这个元素不会激活Spring@Transactional注释的处理，可以使用元素<tx:annotation-driven/> 启用目的。
+
+Spring的缓存注释也需要显式地启用。
+
+#### 使用 component-scan
+
+#### 使用 load-time-weaver
+
+#### 使用 spring-configured
+
+#### 使用 mbean-export
+
+### beans Schema
+自框架诞生以来，beans元素就一直出现在春季。
+
+以下示例显示<meta/>了周围环境中的元素<bean/> ：
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="foo" class="x.y.Foo">
+        <meta key="cacheName" value="foo"/> 
+        <property name="name" value="Rick"/>
+    </bean>
+
+</beans>
+```
+
+## XML Schema 创作
+从2.0版开始，Spring提供了一种机制，该机制可将基于架构的扩展添加到用于定义和配置Bean的基本Spring XML格式中。
+
+为了便于编写使用支持模式的XML编辑器的配置文件，Spring的可扩展XML配置机制基于XML Schema。
+
+要创建新的XML配置扩展，请执行以下操作：
++ 编写XML模式以描述您的自定义元素。
++ 编写自定义NamespaceHandler实现的代码。
++ 对一个或多个BeanDefinitionParser实现进行编码（这是完成实际工作的地方）。
++ 向Spring注册您的新工件。
+
+在下面的示例中，我们创建一个XML扩展（一个自定义XML元素），该扩展使我们可以SimpleDateFormat（从java.text包中）配置类型的对象。
+完成后，我们将能够SimpleDateFormat如下定义bean类型的定义：
+```
+<myns:dateformat id="dateFormat"
+    pattern="yyyy-MM-dd HH:mm"
+    lenient="true"/>
+```
+
+### 编写架构
+### 编码NamespaceHandler
+### 使用BeanDefinitionParser
+### 注册处理程序和架构
+### 在Spring XML配置中使用自定义扩展
+### 更详细的例子
+
+## 应用程序启动步骤
+此部分列出了 **启动步骤** 核心容器所使用的现有资源。
+
+核心容器中定义的应用程序启动步骤：
+
+|名称	|描述	|标签	|
+|--	|--	|--	|
+|spring.beans.instantiate	|Bean及其依赖关系的实例化。	|beanNameBean的名称，beanType注入点所需的类型。	|
+|spring.beans.smart-initialize	|初始化SmartInitializingSingletonbean。	|beanName 豆的名称。	|
+|spring.context.annotated-bean-reader.create	|创造的AnnotatedBeanDefinitionReader。	|	|
+|spring.context.base-packages.scan	|扫描基本软件包。	|packages 用于扫描的基本软件包的数组。	|
+|spring.context.beans.post-process	|Bean后处理阶段。	|	|
+|spring.context.bean-factory.post-process	|调用BeanFactoryPostProcessorbean。	|postProcessor 当前的后处理器。	|
+|spring.context.beandef-registry.post-process	|调用BeanDefinitionRegistryPostProcessorbean。	|postProcessor 当前的后处理器。	|
+|spring.context.component-classes.register	|通过注册组件类AnnotationConfigApplicationContext#register。	|classes 用于注册的给定类的数组。	|
+|spring.context.config-classes.enhance	|使用CGLIB代理增强配置类。	|classCount 增强类的数量。	|
+|spring.context.config-classes.parse	|配置类使用解析阶段ConfigurationClassPostProcessor。	|classCount 处理的类数。	|
+|spring.context.refresh	|	|应用程序上下文刷新阶段。	|
+
