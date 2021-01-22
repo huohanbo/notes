@@ -2410,22 +2410,1135 @@ public class WebConfig {
 ```
 
 ### MVC Config API
+在Java配置中，可以实现该WebMvcConfigurer接口，如以下示例所示：
+```
+@Configuration
+@EnableWebMvc
+public class WebConfig implements WebMvcConfigurer {
+
+    // Implement configuration methods...
+}
+```
+
+在XML中，可以查看<mvc:annotation-driven/>的属性和子元素。
+
 ### Type Conversion
+默认情况下，将安装各种数字和日期类型的格式化程序，并支持通过@NumberFormat和@DateTimeFormat在字段上进行自定义。
+
+要在Java配置中注册自定义格式器和转换器，请使用以下命令：
+```
+@Configuration
+@EnableWebMvc
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addFormatters(FormatterRegistry registry) {
+        // ...
+    }
+}
+```
+
+要在XML配置中执行相同的操作，请使用以下命令：
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/mvc
+        https://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+    <mvc:annotation-driven conversion-service="conversionService"/>
+
+    <bean id="conversionService"
+            class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+        <property name="converters">
+            <set>
+                <bean class="org.example.MyConverter"/>
+            </set>
+        </property>
+        <property name="formatters">
+            <set>
+                <bean class="org.example.MyFormatter"/>
+                <bean class="org.example.MyAnnotationFormatterFactory"/>
+            </set>
+        </property>
+        <property name="formatterRegistrars">
+            <set>
+                <bean class="org.example.MyFormatterRegistrar"/>
+            </set>
+        </property>
+    </bean>
+
+</beans>
+```
+
+默认情况下，Spring MVC在解析和格式化日期值时会考虑请求区域设置。
+这适用于使用“输入”表单字段将日期表示为字符串的表单。
+但是，对于“日期”和“时间”表单字段，浏览器使用HTML规范中定义的固定格式。
+在这种情况下，日期和时间格式可以按以下方式自定义：
+```
+@Configuration
+@EnableWebMvc
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addFormatters(FormatterRegistry registry) {
+        DateTimeFormatterRegistrar registrar = new DateTimeFormatterRegistrar();
+        registrar.setUseIsoFormat(true);
+        registrar.registerFormatters(registry);
+    }
+}
+```
+
 ### Validation
+默认情况下，如果Bean验证存在于类路径中（例如，Hibernate Validator），则将LocalValidatorFactoryBean其注册为全局验证器，以@Valid与 Validated控制器方法参数一起使用。
+
+在Java配置中，您可以自定义全局Validator实例，如以下示例所示：
+```
+@Configuration
+@EnableWebMvc
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public Validator getValidator() {
+        // ...
+    }
+}
+```
+
+以下示例显示了如何在XML中实现相同的配置：
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/mvc
+        https://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+    <mvc:annotation-driven validator="globalValidator"/>
+
+</beans>
+```
+
+Validator还可以在本地注册实现，如以下示例所示：
+```
+@Controller
+public class MyController {
+
+    @InitBinder
+    protected void initBinder(WebDataBinder binder) {
+        binder.addValidators(new FooValidator());
+    }
+}
+
+```
+
 ### Interceptors
+在Java配置中，您可以注册拦截器以应用于传入的请求，如以下示例所示：
+```
+@Configuration
+@EnableWebMvc
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new LocaleChangeInterceptor());
+        registry.addInterceptor(new ThemeChangeInterceptor()).addPathPatterns("/**").excludePathPatterns("/admin/**");
+        registry.addInterceptor(new SecurityInterceptor()).addPathPatterns("/secure/*");
+    }
+}
+```
+
+以下示例显示了如何在XML中实现相同的配置：
+```
+<mvc:interceptors>
+    <bean class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor"/>
+    <mvc:interceptor>
+        <mvc:mapping path="/**"/>
+        <mvc:exclude-mapping path="/admin/**"/>
+        <bean class="org.springframework.web.servlet.theme.ThemeChangeInterceptor"/>
+    </mvc:interceptor>
+    <mvc:interceptor>
+        <mvc:mapping path="/secure/*"/>
+        <bean class="org.example.SecurityInterceptor"/>
+    </mvc:interceptor>
+</mvc:interceptors>
+```
+
 ### Content Types
+您可以配置Spring MVC如何根据请求确定请求的媒体类型（例如，Accept标头，URL路径扩展，查询参数等）。
+
+URL路径扩展首先检查-有json，xml，rss，并atom 注册为已知扩展名（视路径依赖），然后检查Accept的报头。
+
+考虑将这些默认值更改为Accept仅标头，并且，如果必须使用基于URL的内容类型解析，请考虑对路径扩展使用查询参数策略。
+
+在Java配置中，您可以自定义请求的内容类型解析，如以下示例所示：
+```
+@Configuration
+@EnableWebMvc
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
+        configurer.mediaType("json", MediaType.APPLICATION_JSON);
+        configurer.mediaType("xml", MediaType.APPLICATION_XML);
+    }
+}
+```
+
+以下示例显示了如何在XML中实现相同的配置：
+```
+<mvc:annotation-driven content-negotiation-manager="contentNegotiationManager"/>
+
+<bean id="contentNegotiationManager" class="org.springframework.web.accept.ContentNegotiationManagerFactoryBean">
+    <property name="mediaTypes">
+        <value>
+            json=application/json
+            xml=application/xml
+        </value>
+    </property>
+</bean>
+```
+
 ### Message Converters
+可以通过覆盖configureMessageConverters() 或覆盖 extendMessageConverters() 来自定义HttpMessageConverter。
+
+以下示例使用自定义的ObjectMapper而不是默认的添加了XML和Jackson JSON转换器 ：
+```
+@Configuration
+@EnableWebMvc
+public class WebConfiguration implements WebMvcConfigurer {
+
+    @Override
+    public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
+        Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder()
+                .indentOutput(true)
+                .dateFormat(new SimpleDateFormat("yyyy-MM-dd"))
+                .modulesToInstall(new ParameterNamesModule());
+        converters.add(new MappingJackson2HttpMessageConverter(builder.build()));
+        converters.add(new MappingJackson2XmlHttpMessageConverter(builder.createXmlMapper(true).build()));
+    }
+}
+```
+
+以下示例显示了如何在XML中实现相同的配置：
+```
+<mvc:annotation-driven>
+    <mvc:message-converters>
+        <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+            <property name="objectMapper" ref="objectMapper"/>
+        </bean>
+        <bean class="org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConverter">
+            <property name="objectMapper" ref="xmlMapper"/>
+        </bean>
+    </mvc:message-converters>
+</mvc:annotation-driven>
+
+<bean id="objectMapper" class="org.springframework.http.converter.json.Jackson2ObjectMapperFactoryBean"
+      p:indentOutput="true"
+      p:simpleDateFormat="yyyy-MM-dd"
+      p:modulesToInstall="com.fasterxml.jackson.module.paramnames.ParameterNamesModule"/>
+
+<bean id="xmlMapper" parent="objectMapper" p:createXmlMapper="true"/>
+```
+
+在前面的例子中， Jackson2ObjectMapperBuilder 用于创建两种共同的构成MappingJackson2HttpMessageConverter和 MappingJackson2XmlHttpMessageConverter与缩进启用，定制的日期格式，和登记 jackson-module-parameter-names，这增加了用于访问参数名称（在Java中8增加了一个功能）的支持。
+
+该构建器自定义Jackson的默认属性，如下所示：
++ DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES 被禁用。
++ MapperFeature.DEFAULT_VIEW_INCLUSION 被禁用。
+
+如果在类路径中检测到以下知名模块，它将自动注册以下知名模块：
++ jackson-datatype-joda：支持Joda-Time类型。
++ jackson-datatype-jsr310：支持Java 8日期和时间API类型。
++ jackson-datatype-jdk8：支持其他Java 8类型，例如Optional。
++ jackson-module-kotlin：支持Kotlin类和数据类。
+
+其他有趣的Jackson模块也可用：
++ jackson-datatype-money：支持javax.money类型（非官方模块）。
++ jackson-datatype-hibernate：支持特定于Hibernate的类型和属性（包括延迟加载方面）。
+
 ### View Controllers
+这是定义一个ParameterizableViewController的快捷方式，该快捷方式在调用时立即转发到视图。
+当视图生成响应之前没有Java控制器逻辑要运行时，可以在静态情况下使用它。
+
+以下Java配置示例将请求转发/到名为的视图home：
+```
+@Configuration
+@EnableWebMvc
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/").setViewName("home");
+    }
+}
+```
+
+以下示例通过使用<mvc:view-controller>元素，实现了与上一示例相同的操作，但使用XML ：
+```
+<mvc:view-controller path="/" view-name="home"/>
+```
+
+如果将@RequestMapping方法映射到任何HTTP方法的URL，则视图控制器不能用于处理相同的URL。
+这是因为通过URL与带注释的控制器的匹配被视为端点所有权的足够有力的指示，因此可以将405（METHOD_NOT_ALLOWED），415（UNSUPPORTED_MEDIA_TYPE）或类似的响应发送给客户端，以帮助进行调试。
+因此，建议避免在带注释的控制器和视图控制器之间拆分URL处理。
+
 ### View Resolvers
+MVC配置简化了视图解析器的注册。
+
+以下Java配置示例通过使用JSP和Jackson作为ViewJSON呈现的默认配置来配置内容协商视图解析：
+```
+@Configuration
+@EnableWebMvc
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void configureViewResolvers(ViewResolverRegistry registry) {
+        registry.enableContentNegotiation(new MappingJackson2JsonView());
+        registry.jsp();
+    }
+}
+```
+
+以下示例显示了如何在XML中实现相同的配置：
+```
+<mvc:view-resolvers>
+    <mvc:content-negotiation>
+        <mvc:default-views>
+            <bean class="org.springframework.web.servlet.view.json.MappingJackson2JsonView"/>
+        </mvc:default-views>
+    </mvc:content-negotiation>
+    <mvc:jsp/>
+</mvc:view-resolvers>
+```
+
+MVC命名空间提供了专用元素。以下示例适用于FreeMarker：
+```
+<mvc:view-resolvers>
+    <mvc:content-negotiation>
+        <mvc:default-views>
+            <bean class="org.springframework.web.servlet.view.json.MappingJackson2JsonView"/>
+        </mvc:default-views>
+    </mvc:content-negotiation>
+    <mvc:freemarker cache="false"/>
+</mvc:view-resolvers>
+
+<mvc:freemarker-configurer>
+    <mvc:template-loader-path location="/freemarker"/>
+</mvc:freemarker-configurer>
+```
+
+在Java配置中，您可以添加相应的Configurerbean，如以下示例所示：
+```
+@Configuration
+@EnableWebMvc
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void configureViewResolvers(ViewResolverRegistry registry) {
+        registry.enableContentNegotiation(new MappingJackson2JsonView());
+        registry.freeMarker().cache(false);
+    }
+
+    @Bean
+    public FreeMarkerConfigurer freeMarkerConfigurer() {
+        FreeMarkerConfigurer configurer = new FreeMarkerConfigurer();
+        configurer.setTemplateLoaderPath("/freemarker");
+        return configurer;
+    }
+}
+```
+
 ### Static Resources
+此选项提供了一种从基于位置的列表中提供静态资源的便捷的方法。
+
+在下一个示例中，给定一个以/resources开头的请求，相对路径用为Web应用程序根目录下/public或类路径下/static。
+这些资源的使用期限为一年，以确保最大程度地利用浏览器缓存并减少浏览器发出的HTTP请求。
+从Resource#lastModified中推导出Last-Modified信息，以便HTTP条件请求支持"Last-Modified"标头。
+
+以下清单显示了如何使用Java配置进行操作：
+```
+@Configuration
+@EnableWebMvc
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/resources/**")
+            .addResourceLocations("/public", "classpath:/static/")
+            .setCacheControl(CacheControl.maxAge(Duration.ofDays(365)));
+    }
+}
+```
+
+以下示例显示了如何在XML中实现相同的配置：
+```
+<mvc:resources mapping="/resources/**"
+    location="/public, classpath:/static/"
+    cache-period="31556926" />
+```
+
+资源处理程序还支持一系列 ResourceResolver实现和 ResourceTransformer实现，您可以使用它们来创建用于处理优化资源的工具链。
+
+您可以VersionResourceResolver根据从内容，固定应用程序版本或其他版本计算出的MD5哈希值，使用for版本资源URL。
+ ContentVersionStrategy（MD5哈希）是一个不错的选择-有一些明显的例外，如与模块加载程序使用的JavaScript资源。
+
+以下示例显示了如何VersionResourceResolver在Java配置中使用：
+```
+@Configuration
+@EnableWebMvc
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/resources/**")
+                .addResourceLocations("/public/")
+                .resourceChain(true)
+                .addResolver(new VersionResourceResolver().addContentVersionStrategy("/**"));
+    }
+}
+
+```
+
+以下示例显示了如何在XML中实现相同的配置：
+```
+<mvc:resources mapping="/resources/**" location="/public/">
+    <mvc:resource-chain resource-cache="true">
+        <mvc:resolvers>
+            <mvc:version-resolver>
+                <mvc:content-version-strategy patterns="/**"/>
+            </mvc:version-resolver>
+        </mvc:resolvers>
+    </mvc:resource-chain>
+</mvc:resources>
+```
+
+然后，您可以用ResourceUrlProvider来重写URL并应用完整的解析器和转换器链，例如，插入版本。
+MVC配置提供了一个ResourceUrlProvider bean，以便可以将其注入其他对象。
+您也可以使用 Thymeleaf，JSP，FreeMarker以及其他依赖于URL标签的ResourceUrlEncodingFilter使重写 HttpServletResponse#encodeURL透明。
+
+请注意，在同时使用和EncodedResourceResolver（例如，用于提供压缩或brotli编码的资源）和时VersionResourceResolver，必须按此顺序注册它们。
+这样可以确保始终基于未编码文件可靠地计算基于内容的版本。
+
+WebJarsResourceResolver当org.webjars:webjars-locator-core类路径中存在库时，也会通过 自动注册 WebJars。
+解析程序可以重写URL以包括jar的版本，还可以与没有版本的传入URL进行匹配，例如从/jquery/jquery.min.js到 /jquery/1.2.0/jquery.min.js。
+
 ### Default Servlet
+Spring MVC允许映射DispatcherServlet到/（从而覆盖了容器默认Servlet的映射），同时仍允许容器默认Servlet处理静态资源请求。
+它配置了一个DefaultServletHttpRequestHandlerURL映射为/**，相对于其他URL映射具有最低的优先级。
+
+该处理程序将所有请求转发到默认Servlet。因此，它必须按所有其他URL的顺序保留在最后HandlerMappings。
+如果使用<mvc:annotation-driven>，就是这种情况。
+如果设置定制的HandlerMapping，一定要设置其order属性值比DefaultServletHttpRequestHandler的值（Integer.MAX_VALUE）低。
+
+下面的示例演示如何使用默认设置启用功能：
+```
+@Configuration
+@EnableWebMvc
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer) {
+        configurer.enable();
+    }
+}
+```
+
+以下示例显示了如何在XML中实现相同的配置：
+```
+<mvc:default-servlet-handler/>
+```
+
+覆盖Servlet映射 / 需要的注意是，RequestDispatcher必须通过名称而不是通过路径来检索默认Servlet的。
+
+在 DefaultServletHttpRequestHandler尝试自动检测默认的Servlet在启动时的容器，使用大多数主要的Servlet容器（包括软件Tomcat, Jetty, GlassFish, JBoss, Resin, WebLogic, and WebSphere）已知名称的列表。
+如果已使用其他名称自定义配置了默认Servlet，或者在默认Servlet名称未知的情况下使用了不同的Servlet容器，则必须显式提供默认Servlet的名称，如以下示例所示：
+```
+@Configuration
+@EnableWebMvc
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer) {
+        configurer.enable("myCustomDefaultServlet");
+    }
+}
+```
+
+以下示例显示了如何在XML中实现相同的配置：
+```
+<mvc:default-servlet-handler default-servlet-name="myCustomDefaultServlet"/>
+```
+
 ### Path Matching
+您可以自定义与路径匹配和URL处理有关的选项。
+
+以下示例显示了如何在Java配置中自定义路径匹配：
+```
+@Configuration
+@EnableWebMvc
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        configurer
+            .setPatternParser(new PathPatternParser())
+            .addPathPrefix("/api", HandlerTypePredicate.forAnnotation(RestController.class));
+    }
+
+    private PathPatternParser patternParser() {
+        // ...
+    }
+}
+```
+
+以下示例显示了如何在XML中实现相同的配置：
+```
+<mvc:annotation-driven>
+    <mvc:path-matching
+        trailing-slash="false"
+        path-helper="pathHelper"
+        path-matcher="pathMatcher"/>
+</mvc:annotation-driven>
+
+<bean id="pathHelper" class="org.example.app.MyPathHelper"/>
+<bean id="pathMatcher" class="org.example.app.MyPathMatcher"/>
+```
+
 ### Advanced Java Config
+@EnableWebMvc引入了DelegatingWebMvcConfiguration，其中：
++ 为Spring MVC应用程序提供默认的Spring配置
++ 检测并委托给WebMvcConfigurer实现以自定义该配置。
+
+对于高级模式，您可以直接删除@EnableWebMvc，并且实现展DelegatingWebMvcConfiguration而不是实现WebMvcConfigurer，如以下示例所示：
+```
+@Configuration
+public class WebConfig extends DelegatingWebMvcConfiguration {
+
+    // ...
+}
+```
+
+您可以将现有方法保留在WebConfig中，但是现在您还可以覆盖基类中的bean声明，并且在类路径上仍然可以具有许多其他WebMvcConfigurer实现。
+
 ### Advanced XML Config
+MVC命名空间没有高级模式。
+如果您需要在bean上自定义一个不能更改的属性，则可以使用BeanPostProcessor与Spring的ApplicationContext生命周期挂钩，如以下示例所示：
+```
+@Component
+public class MyPostProcessor implements BeanPostProcessor {
+
+    public Object postProcessBeforeInitialization(Object bean, String name) throws BeansException {
+        // ...
+    }
+}
+```
+
+请注意，您需要以MyPostProcessorXML形式显式声明或通过<component-scan/>声明使其被检测为bean 。
 
 ## HTTP/2
+需要Servlet 4容器支持HTTP / 2，并且Spring Framework 5与Servlet API 4兼容。
+从编程模型的角度来看，应用程序不需要做任何特定的事情。
+但是，有一些与服务器配置有关的注意事项。
 
-# REST Clients
-# Testing
+Servlet API确实公开了一种与HTTP / 2相关的构造。
+您可以使用 javax.servlet.http.PushBuilder主动将资源推送到客户端，并且它作为方法的方法参数而受支持@RequestMapping。
+
+# REST客户端
+客户端对REST端点的访问。
+
+## RestTemplate
+RestTemplate是执行HTTP请求的同步客户端。
+它是原始的Spring REST客户端，在基础HTTP客户端库上公开了简单的模板方法API。
+
+从5.0版本开始，RestTemplate它处于维护模式，以后只有很少的更改和错误请求被接受。
+请考虑使用提供更现代API并支持同步，异步和流传输方案的 WebClient。
+
+## WebClient
+WebClient是执行HTTP请求的非阻塞，反应式客户端。
+它是在5.0中引入的，提供了的现代替代方案RestTemplate，并有效支持同步和异步以及流方案。
+
+与相比RestTemplate，WebClient支持以下内容：
++ 非阻塞I / O。
++ 反应性产生背压。
++ 高并发，硬件资源更少。
++ 利用Java 8 lambda的功能风格，流畅的API。
++ 同步和异步交互。
++ 从服务器流向上或向下流。
+
+# 测试
+本节总结了 Spring MVC应用程序中spring-test可用的选项：
++ Servlet API Mocks：用于单元测试控制器，过滤器和其他Web组件的Servlet API合约的模拟实现。
++ TestContext Framework：支持在JUnit和TestNG测试中加载Spring配置，包括跨测试方法高效地缓存已加载的配置，并支持通过MockServletContext加载WebApplicationContexta。
++ Spring MVC Test：一种框架，也称为MockMvc，用于通过DispatcherServlet（即支持注释）测试带注释的控制器，该框架具有Spring MVC基础结构，但没有HTTP服务器。
++ Client-side REST：spring-test提供一个MockRestServiceServer，您可以用作模拟服务器来测试内部使用的客户端代码RestTemplate。
++ WebTestClient：专为测试WebFlux应用程序而设计，但也可以用于通过HTTP连接到任何服务器的端到端集成测试。它是一个无阻塞的反应式客户端，非常适合测试异步和流传输方案。
+
 # WebSockets
+此部分涵盖对Servlet堆栈的支持，包括原始WebSocket交互的WebSocket消息传递，通过SockJS进行WebSocket仿真以及通过STOMP作为WebSocket的子协议进行发布-订阅消息传递。
+
+## WebSocket介绍
+WebSocket协议 (RFC 6455) 提供了一种标准化的方法，可以通过单个TCP连接在客户端和服务器之间建立全双工的双向通信通道。
+它是与HTTP不同的TCP协议，但旨在通过端口80和443在HTTP上工作，并允许重复使用现有的防火墙规则。
+
+WebSocket交互始于一个HTTP请求，该请求使用HTTP Upgrade 标头进行升级，或者在这种情况下切换到WebSocket协议。
+以下示例显示了这种交互：
+```
+GET /spring-websocket-portfolio/portfolio HTTP/1.1
+Host: localhost:8080
+Upgrade: websocket 
+Connection: Upgrade 
+Sec-WebSocket-Key: Uc9l9TMkWGbHFD2qnFHltg==
+Sec-WebSocket-Protocol: v10.stomp, v11.stomp
+Sec-WebSocket-Version: 13
+Origin: http://localhost:8080
+```
+具有WebSocket支持的服务器代替通常的200状态代码，返回类似于以下内容的输出：
+```
+HTTP/1.1 101 Switching Protocols 
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Accept: 1qVdfYHU9hPOl4JYYNXF623Gzn0=
+Sec-WebSocket-Protocol: v10.stomp
+```
+成功握手后，HTTP升级请求的基础TCP套接字将保持打开状态，客户端和服务器均可继续发送和接收消息。
+
+请注意，如果WebSocket服务器在Web服务器（例如nginx）后面运行，则可能需要对其进行配置，以将WebSocket升级请求传递到WebSocket服务器。
+同样，如果应用程序在云环境中运行，请检查与WebSocket支持相关的云提供商的说明。
+
+### HTTP与WebSocket
+尽管WebSocket被设计为与HTTP兼容并以HTTP请求开头，但重要的是要了解这两个协议导致了截然不同的体系结构和应用程序编程模型。
+
+在HTTP和REST中，应用程序被建模为许多URL。
+为了与应用程序交互，客户端访问那些URL，即请求-响应样式。服务器根据HTTP URL，方法和标头将请求路由到适当的处理程序。
+
+相比之下，在WebSockets中，初始连接通常只有一个URL。
+随后，所有应用程序消息都在同一TCP连接上流动。这指向了一个完全不同的异步，事件驱动的消息传递体系结构。
+
+WebSocket也是一种低级传输协议，与HTTP不同，它不对消息的内容规定任何语义。
+这意味着除非客户端和服务器就消息语义达成一致，否则就无法路由或处理消息。
+
+WebSocket客户端和服务器可以通过Sec-WebSocket-ProtocolHTTP握手请求上的标头协商使用更高级别的消息传递协议（例如STOMP）。
+在这种情况下，他们需要提出自己的约定。
+
+### 何时使用WebSocket
+WebSockets可以使网页具有动态性和交互性。
+但是，在许多情况下，结合使用Ajax和HTTP流或长时间轮询可以提供一种简单有效的解决方案。
+
+例如，新闻，邮件和社交订阅源需要动态更新，但是每几分钟进行一次更新可能是完全可以的。
+另一方面，协作，游戏和金融应用程序需要更接近实时。
+
+仅延迟并不是决定因素。
+如果消息量相对较少（例如，监视网络故障），则HTTP流或轮询可以提供有效的解决方案。
+低延迟，高频率和高音量的结合才是使用WebSocket的最佳案例。
+
+还要记住，在Internet上，控件之外的限制性代理可能会阻止WebSocket交互，这可能是因为未将它们配置为传递 Upgrade标头，或者是因为它们关闭了长期处于空闲状态的连接。
+这意味着与面向公众的应用程序相比，将WebSocket用于防火墙内部的应用程序是一个更直接的决定。
+
+## WebSocket API
+Spring框架提供了一个WebSocket API，可用于编写处理WebSocket消息的客户端和服务器端应用程序。
+
+### WebSocketHandler
+创建WebSocket服务器就像WebSocketHandler实现一样简单，或者扩展TextWebSocketHandler或BinaryWebSocketHandler。
+以下示例使用TextWebSocketHandler：
+```
+import org.springframework.web.socket.WebSocketHandler;
+import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.TextMessage;
+
+public class MyHandler extends TextWebSocketHandler {
+
+    @Override
+    public void handleTextMessage(WebSocketSession session, TextMessage message) {
+        // ...
+    }
+
+}
+```
+
+有专用WebSocket的 Java配置和XML名称空间 支持，用于将前面的WebSocket处理程序映射到特定的URL，如以下示例所示：
+```
+import org.springframework.web.socket.config.annotation.EnableWebSocket;
+import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
+
+@Configuration
+@EnableWebSocket
+public class WebSocketConfig implements WebSocketConfigurer {
+
+    @Override
+    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        registry.addHandler(myHandler(), "/myHandler");
+    }
+
+    @Bean
+    public WebSocketHandler myHandler() {
+        return new MyHandler();
+    }
+
+}
+```
+
+以下示例显示了与先前示例等效的XML配置：
+```
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:websocket="http://www.springframework.org/schema/websocket"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/websocket
+        https://www.springframework.org/schema/websocket/spring-websocket.xsd">
+
+    <websocket:handlers>
+        <websocket:mapping path="/myHandler" handler="myHandler"/>
+    </websocket:handlers>
+
+    <bean id="myHandler" class="org.springframework.samples.MyHandler"/>
+
+</beans>
+```
+
+前面的示例用于Spring MVC应用程序，并且应包含在的DispatcherServlet配置中。
+但是Spring的WebSocket并不依赖于Spring MVC。
+在WebSocketHttpRequestHandler的帮助下，可以简单地将WebSocketHandler集成到其他HTTP服务环境中 。
+
+当WebSocketHandler直接使用API或间接使用API（例如通过 STOMP消息传递）时，由于基础标准WebSocket会话（JSR-356）不允许并发发送，因此应用程序必须同步消息的发送。一种选择是使用ConcurrentWebSocketSessionDecorator将WebSocketSession封装起来 。
+
+### WebSocket Handshake
+定制初始WebSocket握手请求的最简单方法是通过HandshakeInterceptor，它公开了“before”和“after”的方法。
+可以使用此类拦截器来阻止握手或使用任何WebSocketSession可用属性。
+
+以下示例使用内置的拦截器将HTTP会话属性传递到WebSocket会话：
+```
+@Configuration
+@EnableWebSocket
+public class WebSocketConfig implements WebSocketConfigurer {
+
+    @Override
+    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        registry.addHandler(new MyHandler(), "/myHandler")
+            .addInterceptors(new HttpSessionHandshakeInterceptor());
+    }
+
+}
+```
+
+以下示例显示了与先前示例等效的XML配置：
+```
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:websocket="http://www.springframework.org/schema/websocket"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/websocket
+        https://www.springframework.org/schema/websocket/spring-websocket.xsd">
+
+    <websocket:handlers>
+        <websocket:mapping path="/myHandler" handler="myHandler"/>
+        <websocket:handshake-interceptors>
+            <bean class="org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor"/>
+        </websocket:handshake-interceptors>
+    </websocket:handlers>
+
+    <bean id="myHandler" class="org.springframework.samples.MyHandler"/>
+
+</beans>
+```
+
+一个更高级的选项是继承DefaultHandshakeHandler，它执行WebSocket握手的步骤包括验证客户端来源，协商子协议以及其他详细信息。
+
+如果应用程序需要配置自定义项RequestUpgradeStrategy以适应尚不支持的WebSocket服务器引擎和版本，则它可能还需要使用此选项。
+
+### 部署方式
+易于将Spring WebSocket API集成到Spring MVC应用程序中，在该应用程序中DispatcherServlet可以同时服务HTTP WebSocket握手和其他HTTP请求。通过调用也很容易集成到其他HTTP处理方案中WebSocketHttpRequestHandler。这是方便且易于理解的。但是，对于JSR-356运行时，需要特别注意。
+
+Java WebSocket API（JSR-356）提供了两种部署机制。首先涉及启动时的Servlet容器类路径扫描（Servlet 3功能）。另一个是在Servlet容器初始化时使用的注册API。这两种机制都无法将单个“前端控制器”用于所有HTTP处理（包括WebSocket握手和所有其他HTTP请求）（例如Spring MVC）DispatcherServlet。
+
+这是对JSR-356的重大限制，RequestUpgradeStrategy即使在JSR-356运行时中运行，Spring的WebSocket支持也可以通过服务器特定的实现来解决。Tomcat，Jetty，GlassFish，WebLogic，WebSphere和Undertow（以及WildFly）目前存在此类策略。
+
+### 服务配置
+每个基础的WebSocket引擎都公开配置属性，这些属性控制运行时特征，例如消息缓冲区大小的大小，空闲超时等。
+
+对于Tomcat，WildFly和GlassFish，可以将一个ServletServerContainerFactoryBean添加到WebSocket Java配置中，如以下示例所示：
+```
+@Configuration
+@EnableWebSocket
+public class WebSocketConfig implements WebSocketConfigurer {
+
+    @Bean
+    public ServletServerContainerFactoryBean createWebSocketContainer() {
+        ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
+        container.setMaxTextMessageBufferSize(8192);
+        container.setMaxBinaryMessageBufferSize(8192);
+        return container;
+    }
+
+}
+```
+
+以下示例显示了与先前示例等效的XML配置：
+```
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:websocket="http://www.springframework.org/schema/websocket"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/websocket
+        https://www.springframework.org/schema/websocket/spring-websocket.xsd">
+
+    <bean class="org.springframework...ServletServerContainerFactoryBean">
+        <property name="maxTextMessageBufferSize" value="8192"/>
+        <property name="maxBinaryMessageBufferSize" value="8192"/>
+    </bean>
+
+</beans>
+```
+
+对于Jetty，您需要提供一个预先配置的Jetty，WebSocketServerFactory然后DefaultHandshakeHandler通过WebSocket Java配置将其插入Spring 。以下示例显示了如何执行此操作：
+```
+@Configuration
+@EnableWebSocket
+public class WebSocketConfig implements WebSocketConfigurer {
+
+    @Override
+    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        registry.addHandler(echoWebSocketHandler(),
+            "/echo").setHandshakeHandler(handshakeHandler());
+    }
+
+    @Bean
+    public DefaultHandshakeHandler handshakeHandler() {
+
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        policy.setInputBufferSize(8192);
+        policy.setIdleTimeout(600000);
+
+        return new DefaultHandshakeHandler(
+                new JettyRequestUpgradeStrategy(new WebSocketServerFactory(policy)));
+    }
+
+}
+```
+
+以下示例显示了与先前示例等效的XML配置：
+```
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:websocket="http://www.springframework.org/schema/websocket"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/websocket
+        https://www.springframework.org/schema/websocket/spring-websocket.xsd">
+
+    <websocket:handlers>
+        <websocket:mapping path="/echo" handler="echoHandler"/>
+        <websocket:handshake-handler ref="handshakeHandler"/>
+    </websocket:handlers>
+
+    <bean id="handshakeHandler" class="org.springframework...DefaultHandshakeHandler">
+        <constructor-arg ref="upgradeStrategy"/>
+    </bean>
+
+    <bean id="upgradeStrategy" class="org.springframework...JettyRequestUpgradeStrategy">
+        <constructor-arg ref="serverFactory"/>
+    </bean>
+
+    <bean id="serverFactory" class="org.eclipse.jetty...WebSocketServerFactory">
+        <constructor-arg>
+            <bean class="org.eclipse.jetty...WebSocketPolicy">
+                <constructor-arg value="SERVER"/>
+                <property name="inputBufferSize" value="8092"/>
+                <property name="idleTimeout" value="600000"/>
+            </bean>
+        </constructor-arg>
+    </bean>
+
+</beans>
+```
+
+### 跨域支持
+从Spring Framework 4.1.5开始，WebSocket和SockJS的默认行为是仅接受同源请求。
+也可以允许所有或指定的来源列表。
+此检查主要用于浏览器客户端。
+
+三种可能的行为是：
++ 仅允许同源请求（默认）：在此模式下，启用SockJS时，Iframe HTTP响应标头X-Frame-Options设置为SAMEORIGIN，并且JSONP传输被禁用，因为它不允许检查请求的来源。因此，启用此模式时，不支持IE6和IE7。
++ 允许指定来源列表：每个允许的来源必须以http:// 或开头https://。在此模式下，启用SockJS时，将禁用IFrame传输。因此，启用此模式时，不支持IE6到IE9。
++ 允许所有原点：要启用此模式，应提供*作为允许的原点值。在这种模式下，所有传输都可用。
+
+可以配置WebSocket和SockJS允许的来源，如以下示例所示：
+```
+import org.springframework.web.socket.config.annotation.EnableWebSocket;
+import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
+
+@Configuration
+@EnableWebSocket
+public class WebSocketConfig implements WebSocketConfigurer {
+
+    @Override
+    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        registry.addHandler(myHandler(), "/myHandler").setAllowedOrigins("https://mydomain.com");
+    }
+
+    @Bean
+    public WebSocketHandler myHandler() {
+        return new MyHandler();
+    }
+
+}
+```
+
+以下示例显示了与先前示例等效的XML配置：
+```
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:websocket="http://www.springframework.org/schema/websocket"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/websocket
+        https://www.springframework.org/schema/websocket/spring-websocket.xsd">
+
+    <websocket:handlers allowed-origins="https://mydomain.com">
+        <websocket:mapping path="/myHandler" handler="myHandler" />
+    </websocket:handlers>
+
+    <bean id="myHandler" class="org.springframework.samples.MyHandler"/>
+
+</beans>
+```
+
+## SockJS Fallback
+在公共Internet上，控件外部的限制性代理可能会阻止WebSocket交互，这可能是因为未将它们配置为传递Upgrade标头，或者是因为它们关闭了长期处于空闲状态的连接。
+
+解决此问题的方法是WebSocket仿真，即先尝试使用WebSocket，然后再尝试使用基于HTTP的技术来模拟WebSocket交互并公开相同的应用程序级API。
+
+在Servlet堆栈上，Spring框架为SockJS协议提供服务器（和客户端）支持。
+
+### 总览
+SockJS的目标是让应用程序使用WebSocket API，但在运行时必要时使用非WebSocket替代方案，而无需更改应用程序代码。
+
+SockJS包括：
++ 所述SockJS协议 以可执行的形式定义的 解说的测试。
++ 该SockJS JavaScript客户端 -在浏览器中使用客户端库。
++ SockJS服务器实现，包括Spring Frameworkspring-websocket模块中的一个。
++ spring-websocket模块中的SockJS Java客户端（从4.1版开始）。
+
+SockJS设计用于浏览器。它使用多种技术来支持各种浏览器版本。
+传输分为三大类：WebSocket，HTTP流和HTTP长轮询。
+
+SockJS客户端从发送开始以GET /info从服务器获取基本信息。
+在那之后，它必须决定使用哪种交通工具。如果可能，请使用WebSocket。如果没有，在大多数浏览器中，至少有一个HTTP流选项。如果不是，则使用HTTP（长）轮询。
+
+所有传输请求都具有以下URL结构：
+```
+https：// host：port / myApp / myEndpoint / {server-id} / {session-id} / {transport}
+```
++ {server-id} 在路由集群中的请求时很有用，但否则不使用。,
++ {session-id} 关联属于SockJS会话的HTTP请求。
++ {transport}指示传输类型（例如，websocket，xhr-streaming，和其它物质）。
+
+WebSocket传输仅需要单个HTTP请求即可进行WebSocket握手。此后所有消息在该套接字上交换。
+HTTP传输需要更多请求。
+例如，Ajax/XHR流依赖于对服务器到客户端消息的一个长时间运行的请求，以及对客户端到服务器消息的其他HTTP POST请求。
+长轮询与此类似，不同之处在于长轮询在每次服务器到客户端发送后结束当前请求。
+
+SockJS添加了最少的消息框架。例如：
++ 字母 o(open)：服务器初始化。
++ JSON数组 a["message1","message2"]：发送消息。
++ 字母 h(heartbeat)：如果在25秒（默认）内没有消息流。
++ 字母 c(close)：以关闭会话。
+
+### 启用S​​ockJS
+通过Java配置启用SockJS，如以下示例所示：
+```
+@Configuration
+@EnableWebSocket
+public class WebSocketConfig implements WebSocketConfigurer {
+
+    @Override
+    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        registry.addHandler(myHandler(), "/myHandler").withSockJS();
+    }
+
+    @Bean
+    public WebSocketHandler myHandler() {
+        return new MyHandler();
+    }
+
+}
+```
+
+以下示例显示了与先前示例等效的XML配置：
+```
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:websocket="http://www.springframework.org/schema/websocket"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/websocket
+        https://www.springframework.org/schema/websocket/spring-websocket.xsd">
+
+    <websocket:handlers>
+        <websocket:mapping path="/myHandler" handler="myHandler"/>
+        <websocket:sockjs/>
+    </websocket:handlers>
+
+    <bean id="myHandler" class="org.springframework.samples.MyHandler"/>
+
+</beans>
+```
+
+### IE 8 and 9
+
+### Heartbeats
+
+### Client Disconnects
+
+### SockJS and CORS
+
+### SockJsClient
+
+## STOMP
+WebSocket协议定义了两种消息类型（文本消息和二进制消息），但是其内容未定义。
+
+该协议定义了一种机制，供客户端和服务器协商用于在WebSocket之上使用的子协议（即高级消息协议），以定义每种协议可以发送的消息类型，格式，内容。每个消息，依此类推。
+
+子协议的使用是可选的，但是无论哪种方式，客户端和服务器都需要就定义消息内容的某种协议达成共识。
+
+### Overview
+### Benefits
+### Enable STOMP
+### WebSocket Server
+### Flow of Messages
+### Annotated Controllers
+### Sending Messages
+### Simple Broker
+### External Broker
+### Connecting to a Broker
+### Dots as Separators
+### Authentication
+### Token Authentication
+### User Destinations
+### Order of Messages
+### Events
+### Interception
+### STOMP Client
+### WebSocket Scope
+### Performance
+### Monitoring
+### Testing
+
 # 其他Web框架
+本章详细介绍了Spring与第三方Web框架的集成。
+
+Spring框架的核心价值主张之一就是**支持多种选择**。
+
+从一般意义上讲，Spring不会强迫您使用或购买任何特定的体系结构，技术或方法（尽管它肯定比其他建议更重要）。
+可以自由选择与开发人员及其开发团队最相关的架构，技术或方法，这在Web领域最明显。
+在Web领域，Spring提供了自己的Web框架（Spring MVC和Spring WebFlux），同时支持与许多流行的第三方Web框架集成。
+
+## 通用配置
+在深入研究每个受支持的Web框架的集成细节之前，让我们首先看一下并非特定于任何Web框架的通用Spring配置。
+
+Spring的轻量级应用程序模型拥护的一个概念是分层体系结构的概念。
+在“经典”分层体系结构中，Web层只是众多层中的一层。
+它充当服务器端应用程序的入口点之一，并且委派服务层中定义的服务对象（外观），以满足特定于业务（与表示技术无关）的用例。
+在Spring中，这些服务对象，任何其他特定于业务的对象，数据访问对象和其他对象都存在于不同的“业务上下文”中，其中不包含Web或表示层对象（表示对象，例如Spring MVC控制器，通常是在不同的“展示环境”中进行配置）。
+ 
+具体要做的是，在Web应用程序的web.xml文件中声明一个 ContextLoaderListener，并在<context-param />添加 contextConfigLocation部分，该部分定义了如何加载Spring XML配置文件。
+
+首先声明以下<listener/>配置：
+```
+<listener>
+    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+</listener>
+```
+然后声明以下<context-param/>配置：
+```
+<context-param>
+    <param-name>contextConfigLocation</param-name>
+    <param-value>/WEB-INF/applicationContext*.xml</param-value>
+</context-param>
+```
+如果未指定 contextConfigLocation 参数，ContextLoaderListener 将查找并加载名为/WEB-INF/applicationContext.xmlload的文件。
+Context文件加载完成后，Spring将创建一个WebApplicationContext对象，并将其存储在Web应用程序的ServletContext中。
+
+所有Java Web框架都建立在Servlet API的基础上，因此可以使用以下代码段来访问 ContextLoaderListener 创建的 ApplicationContext。
+以下示例显示了如何获取WebApplicationContext：
+```
+WebApplicationContext ctx = WebApplicationContextUtils.getWebApplicationContext(servletContext);
+```
+
+一旦有了对WebApplicationContext的引用，就可以按其名称或类型检索bean。
+大多数开发人员都按名称检索bean，然后将其转换为实现的接口之一。
+
+幸运的是，本节中的大多数框架都具有更简单的查找bean的方法。
+它们不仅使从Spring容器中获取bean变得容易，而且还使您可以在其控制器上使用依赖项注入。
+
+## JSF
+JavaServer Faces（JSF）是基于JCP标准组件、Web事件驱动的用户界面框架。
+它是Java EE的正式组成部分，但也可以单独使用，例如通过将Mojarra或MyFaces嵌入Tomcat中。
+
+JSF的最新版本已与应用程序服务器中的CDI基础结构紧密联系在一起，其中一些新的JSF功能仅在这种环境下有效。
+
+Spring对JSF支持不再活跃，主要是在现代化较旧的基于JSF的应用程序时出于迁移目的而存在。
+Spring的JSF集成中的关键元素是JSFELResolver机制。
+
+### Spring Bean解析器
+SpringBeanFacesELResolver是符合JSF的ELResolver实现，与JSF和JSP使用的标准Unified EL集成。
+
+它首先委派给Spring的上下文 WebApplicationContext，然后委派给底层JSF实现的默认解析器。
+
+可以在JSF的配置文件faces-context.xml文件中定义SpringBeanFacesELResolver，如以下示例所示：
+```
+<faces-config>
+    <application>
+        <el-resolver>org.springframework.web.jsf.el.SpringBeanFacesELResolver</el-resolver>
+        ...
+    </application>
+</faces-config>
+```
+
+### FacesContextUtils
+在faces-config.xml中将属性映射到的bean时，自定义效果ELResolver很好。
+
+有时可能需要显式地获取bean，使用FacesContextUtils，与WebApplicationContextUtils相似，它采用FacesContext参数而不是ServletContext参数。
+以下示例显示如何使用FacesContextUtils：
+```
+ApplicationContext ctx = FacesContextUtils.getWebApplicationContext(FacesContext.getCurrentInstance());
+```
+
+## Apache Struts 2.x
+Struts由Craig McClanahan发明，是由Apache Software Foundation托管的一个开源项目。
+
+当时，它极大地简化了JSP / Servlet编程范例，并赢得了许多使用专有框架的开发人员的青睐。
+它简化了编程模型，它是开源的，并且拥有庞大的社区，这使该项目得以发展并在Java Web开发人员中广受欢迎。
+
+查看[Struts 2.x和Struts提供的Spring插件](https://struts.apache.org/plugins/spring/)提供内置的Spring集成。
+
+## Apache Tapestry 5.x
+Tapestry是一个“面向组件的框架，用于在Java中创建动态，健壮，高度可伸缩的Web应用程序。”
+
+尽管Spring具有自己强大的Web层，但通过将Tapestry用于Web用户界面并将Spring容器用于较低层，构建企业Java应用程序具有许多独特的优势。
+
+参考Tapestry的[Spring专用集成模块](https://tapestry.apache.org/integrating-with-spring-framework.html)。
+
+## 更多资源
+以下链接提供了有关本章中描述的各种Web框架的更多资源。
++ [JSF](https://www.oracle.com/technetwork/java/javaee/javaserverfaces-139869.html)主页
++ [Struts](https://struts.apache.org/)主页
++ [Tapestry](https://tapestry.apache.org/)主页
