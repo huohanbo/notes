@@ -1,19 +1,21 @@
 # 参考资料
 > [Spring参考文档](https://docs.spring.io/spring-framework/docs/current/reference/html/)
-> [Web on Servlet Stack](https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#spring-web)
 
 --------------------------------------------------
 此部分的文档涵盖对基于Servlet API构建并部署到Servlet容器的Servlet堆栈Web应用程序的支持。
 
 # Spring Web MVC
-Spring Web MVC是基于Servlet API构建的原始Web框架，从一开始就已包含在Spring框架中。正式名称“ Spring Web MVC”来自其源模块（spring-webmvc）的名称，但更通常称为“ Spring MVC”。
+Spring Web MVC是基于Servlet API构建的原始Web框架，从一开始就已包含在Spring框架中。
+
+正式名称“ Spring Web MVC”来自其源模块（spring-webmvc）的名称，但更通常称为“ Spring MVC”。
 
 Spring Framework 5.0引入了一个反应式堆栈Web框架，其名称“ Spring WebFlux”基于其源模块（spring-webflux）。
 
-## DispatcherServlet 分发器
+## !!!DispatcherServlet 调度器
 Spring MVC围绕着前端控制器模式设计一个核心Servlet：DispatcherServlet，提供了用于请求处理的共享算法，而实际工作是由可配置的委托组件执行的。
 
 DispatcherServlet作为Servlet，需要通过使用Java配置或web.xml进行定义声明。
+
 另外，DispatcherServlet使用Spring配置文件来发现它所需要的请求映射，视图解析，异常处理，委托组件等配置信息。
 
 以下示例使用Java配置注册并初始化DispatcherServlet：
@@ -68,7 +70,7 @@ public class MyWebApplicationInitializer implements WebApplicationInitializer {
 Spring Boot遵循不同的初始化顺序。
 Spring Boot并没有陷入Servlet容器的生命周期，而是使用Spring配置来引导自身和嵌入式Servlet容器。
 
-### 上下文结构
+### Context Hierarchy 上下文结构
 DispatcherServlet预定义了一个WebApplicationContext，可以对自身进行扩展配置。
 WebApplicationContext具有指向ServletContext和Servlet的链接。
 WebApplicationContext也与ServletContext绑定，这样applications可以使用RequestContextUtils的静态方法来查找WebApplicationContext。
@@ -134,31 +136,37 @@ public class MyWebAppInitializer extends AbstractAnnotationConfigDispatcherServl
 ```
 如果不需要应用程序上下文层次结构，则应用程序可以仅配置“根”上下文，并将Servlet的contextConfigLocation参数保留为空。
 
-### 特殊Bean
-DispatcherServlet特殊bean的委托处理请求并提供适当的响应。
-所谓“特殊bean”，是指实现框架合同的Spring托管实例。
-这些通常带有内置合同，但是您可以自定义它们的属性并扩展或替换它们。
+### !!!Special Bean Types 特殊Bean类型
+```DispatcherServlet```委托```特殊Bean```来处理请求以及提供适当响应。
 
-下表列出了被检测到的特殊bean DispatcherServlet：
-|豆类	|说明	|
+这里所说的```特殊Bean```，指的是Spring管理的实现了框架约定的对象实例。
+它们通常带有内置的约定，但您可以自定义它们的属性并扩展或替换它们。
+
+下表列出了```DispatcherServlet```会检测到的特殊Bean：
+
+|Bean类型	|说明	|
 |--	|--	|
-|HandlerMapping	|将请求与拦截器列表一起映射到处理程序，以 进行预处理和后期处理。映射基于某些条件，具体标准因HandlerMapping 实现而异。两个主要HandlerMapping实现是RequestMappingHandlerMapping （支持带@RequestMapping注解的方法）和SimpleUrlHandlerMapping （维护对处理程序的URI路径模式的显式注册）。	|
-|HandlerAdapter	|帮助DispatcherServlet调用映射到请求的处理程序，而不管实际如何调用该处理程序。例如，调用带注解的控制器需要解析注解。a的主要目的HandlerAdapter是保护DispatcherServlet这些细节。	|
-|HandlerExceptionResolver	|解决异常的策略，可能将它们映射到处理程序，HTML错误视图或其他目标。	|
-|ViewResolver	|String将从处理程序返回的基于逻辑的视图名称解析为实际的名称View ，以将其呈现给响应。	|
-|LocaleResolver，LocaleContextResolver	|解析Locale一个客户正在使用的并且可能是他们所在的时区，以便能够提供国际化的视图。	|
-|ThemeResolver	|解决Web应用程序可以使用的主题，例如，提供个性化的布局。	|
-|MultipartResolver	|借助一些多部分解析库来解析多部分请求的抽象（例如，浏览器表单文件上传）。	|
-|FlashMapManager	|存储和检索“输入”和“输出” FlashMap，它们通常用于通过重定向将属性从一个请求传递到另一个请求。	|
+|HandlerMapping	|将一个```request```映射到```处理器```以及```拦截器```，映射规则因```HandlerMapping```实现而异。```HandlerMapping```的两个主要实现是```RequestMappingHandlerMapping```(用于支持@RequestMapping注解)和```SimpleUrlHandlerMapping```(用于向程序注册URI路径)。|
+|HandlerAdapter	|帮助```DispatcherServlet```调用映射到请求的处理程序	，而不管实际如何调用该处理程序。例如，调用带注解的控制器需要解析注解。```HandlerAdapter``` 的主要目的是保护DispatcherServlet不受这些细节影响。	|
+|HandlerExceptionResolver	|解决异常的策略，可能会将它们映射到处理程序、HTML错误视图或其他目标。	|
+|ViewResolver	|将处理程序返回的基于逻辑字符串的视图名称解析为用于呈现响应的实际视图	|
+|LocaleResolver，LocaleContextResolver	|解析客户端正在使用的区域设置，可能还包括它们的时区，以便能够提供国际化视图。	|
+|ThemeResolver	|解析您的Web应用程序可以使用的主题，提供个性化布局。	|
+|MultipartResolver	|用于解析multi-part request。例如，文件上传。|
+|FlashMapManager	|存储和检索“输入”和“输出”FlashMap，这些FlashMap可用于将属性从一个请求传递到另一个请求，通常是通过重定向。	|
 
-### Web MVC配置
-应用程序可以声明处理请求所需的特殊Bean类型中列出的基础结构Bean。
-DispatcherServlet检查WebApplicationContext中的特殊Bean，如果没有匹配的Bean类型，它将使用中 DispatcherServlet.properties 列出的默认类型。
-DispatcherServlet.properties：
+### !!!Web MVC Config MVC配置
+Applications 可以声明```Special Bean Types```中用于处理请求的Bean。DispatcherServlet 首先在WebApplicationContext中查找【Special Bean】，如果没有匹配的Bean类型，它将使用中```DispatcherServlet.properties```列出的默认Bean类型。
+
+【MVC Config】使用Java或XML声明所需的bean，并提供更高级别的配置回调API来定制它。
+
+Spring Boot 使用Java来配置 Spring MVC，并提供了许多额外方便的选项。
+
+!!!```DispatcherServlet.properties```如下：
 ```
-#Default implementation classes for DispatcherServlet's strategy interfaces.
-#Used as fallback when no matching beans are found in the DispatcherServlet context.
-#Not meant to be customized by application developers.
+#DispatcherServlet策略接口的默认实现类.
+#DispatcherServlet上下文中找不到匹配的Bean时作为备选方案.
+#不会由开发人员自定义.
 
 org.springframework.web.servlet.LocaleResolver=org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver
 
@@ -184,9 +192,8 @@ org.springframework.web.servlet.ViewResolver=org.springframework.web.servlet.vie
 
 org.springframework.web.servlet.FlashMapManager=org.springframework.web.servlet.support.SessionFlashMapManager
 ```
-Spring Boot依靠Java配置来配置Spring MVC，并提供了许多额外的方便选项。
 
-### Servlet配置
+### Servlet Config Servlet配置
 在Servlet 3.0+环境中，您可以选择以编程方式配置Servlet容器，以替代方式或与web.xml文件结合使用。以下示例注册一个DispatcherServlet：
 ```
 import org.springframework.web.WebApplicationInitializer;
@@ -207,7 +214,7 @@ public class MyWebApplicationInitializer implements WebApplicationInitializer {
 WebApplicationInitializer是Spring MVC提供的接口，可确保检测到您的实现并将其自动用于初始化任何Servlet3容器。
 通过WebApplicationInitializer命名方法 的抽象基类实现，AbstractDispatcherServletInitializer可以DispatcherServlet通过重写方法来指定servlet映射和DispatcherServlet配置位置，从而更加轻松地进行注册 。
 
-### 请求处理过程
+### !!!Processing 请求处理过程
 DispatcherServlet的请求处理过程如下：
 + 在WebApplicationContext被搜索并在请求的一个属性，在过程控制器和其它元件可以使用的约束。默认情况下，它是在DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE键下绑定的。
 + 语言环境解析器绑定到请求，以使流程中的元素解析在处理请求（呈现视图，准备数据等）时要使用的语言环境。如果不需要语言环境解析，则不需要语言环境解析器。
@@ -221,20 +228,21 @@ BeanWebApplicationContext中声明的HandlerExceptionResolver用于解决在请�
 DispatcherServlet还支持last-modification-date Servlet API指定的的返回。
 确定特定请求的最后修改日期的过程很简单：DispatcherServlet查找适当的处理程序映射并测试找到的处理程序是否实现了LastModified接口。如果是这样，则将接口long getLastModified(request)方法的值 LastModified返回给客户端。
 
-### HandlerInterceptor 拦截器
-所有HandlerMapping实现均支持处理程序拦截器，当您要将特定功能应用于某些请求时，这些处理程序将非常有用。
-拦截器必须实现org.springframework.web.servlet包的HandlerInterceptor中的三种方法：
-+ preHandle(..)：在实际的处理程序运行之前
-+ postHandle(..)：处理程序运行后
-+ afterCompletion(..)：完整请求完成后
+### !!!Interception 拦截器
+所有的```HandlerMapping```实现都支持处理程序拦截器，当您想要将特定功能应用于特定的请求 (例如检查主体)时，这些拦截器非常有用。
 
-preHandle(..)方法返回一个布尔值，可以使用此方法来中断或继续执行链的处理。
-当此方法返回时true，处理程序执行链继续。
-当它返回false时，DispatcherServlet 假定拦截器本身已经处理了请求，并且不会继续执行其他拦截器和执行链中的实际处理程序。
+拦截器需要实现org.springframework work.web.servlet包的HandlerInterceptor接口，并实现三种方法：
++ preHandle(..)：在handler运行之前
++ postHandle(..)：在handler运行之后
++ afterCompletion(..)：在完整请求完成后
 
-postHandle(..)对使用@ResponseBody和ResponseEntity的方法用处不大。
+```preHandle```方法返回一个布尔值，可以使用此方法来中断或继续执行链的处理。
+当方法返回true时，处理程序执行链继续继续执行。
+当方法返回false时，```DispatcherServlet```会假定拦截器本身已经处理了请求，并且不会继续执行执行链中的其他拦截器和处理程序。
 
-### HandlerExceptionResolver 异常处理
+```postHandle```对于使用了```@ResponseBody```和```ResponseEntity```方法不太有用，这些方法的响应是在```HandlerAdapter```中和```postHandle```之前提交的，这意味着此时要对响应进行任何更改（例如添加额外的报头）都为时已晚。对于这样的场景，可以实现```ResponseBodyAdvices```并将其声明为一个```Controller Advice```bean，或者直接在```RequestMappingHandlerAdapter```上配置它。
+
+### !!!Exceptions 异常处理
 如果在请求映射期间发生异常或从请求处理程序抛出异常，则将DispatcherServlet委托给 一系列 HandlerExceptionResolver 以解决异常并提供替代处理，通常是错误响应。
 
 下表列出了可用的HandlerExceptionResolver实现：
@@ -279,7 +287,7 @@ public class ErrorController {
 }
 ```
 
-### ViewResolver 视图解析器
+### !!!ViewResolver 视图解析器
 Spring MVC定义了ViewResolver和View接口，使您可以在浏览器中呈现模型，而无需将您绑定到特定的视图技术。
 ViewResolver 提供视图名称和实际视图之间的映射。
 View在移交给特定的视图技术之前，先解决数据准备问题。
@@ -323,7 +331,7 @@ UrlBasedViewResolver 和它的子类会识别需要重定向的指令。
 #### 内容协商
 ContentNegotiatingViewResolver 不会解析视图本身，而是委托其他视图解析器，并选择类似于客户端请求的表示形式的视图。可以根据Accept标题或查询参数（例如"/path?format=pdf"）来确定表示形式。
 
-### LocaleResolver 语言环境
+### Locale 地域信息
 Spring Web MVC框架支持国际化。
 DispatcherServlet使您可以使用客户端的语言环境自动解析消息。
 这是通过**LocaleResolver**对象完成的。
@@ -406,7 +414,7 @@ CookieLocaleResolver，此策略将本地选择的语言环境设置存储在Ser
 </bean>
 ```
 
-### 主题
+### Themes 主题
 略
 
 ### MultipartResolver Multipart解析器
@@ -442,7 +450,7 @@ public class AppInitializer extends AbstractAnnotationConfigDispatcherServletIni
 }
 ```
 
-### 日志
+### Logging 日志
 DEBUG级别的日志被设计为紧凑，最少且人性化的。它侧重于高价值的信息，这些信息有用，而其他信息则仅在调试特定问题时才有用。
 
 TRACE级别的日志记录通常遵循与DEBUG相同的原则，但可用于调试任何问题。此外，某些日志消息在TRACE和DEBUG上可能显示不同级别的详细信息。
@@ -478,7 +486,7 @@ public class MyInitializer
 }
 ```
 
-## 过滤器
+## Filters 过滤器
 ### Form Data
 浏览器只能通过 HTTP GET或HTTP POST 提交数据，而非浏览器客户端还可以使用HTTP PUT，PATCH和DELETE方式提交数据。
 Servlet API 的 ServletRequest.getParameter*() 方法仅支持HTTP POST的表单字段访问。
@@ -516,7 +524,7 @@ ShallowEtagHeaderFilter过滤器通过缓存写入响应的内容，并从它计
 Spring MVC通过控制器上的注解为CORS配置提供了细粒度的支持。
 但是，当与Spring Security一起使用时，我们建议使用CorsFilter，CorsFilter要在Spring Security的过滤器链之前订购的内置组件。
 
-## 控制器注解
+## !!!Annotated Controllers 控制器注解
 Spring MVC提供了基于注解的编程模型，其中 @Controller和 @RestController 组件使用注解来表达请求映射，请求输入，异常处理等。
 带注解的控制器具有灵活的方法签名，无需扩展基类或实现特定的接口。
 
@@ -578,7 +586,7 @@ public class WebConfig {
 例如，使用<tx:annotation-driven/>可以更改为<tx:annotation-driven proxy-target-class="true"/>，
 使用 @EnableTransactionManagement可以更改为 @EnableTransactionManagement(proxyTargetClass = true)。
 
-### Request Mapping 请求映射
+### !!!Request Mapping 请求映射
 @RequestMapping注解将请求映射到控制器方法。
 @RequestMapping具有各种属性设置，可以通过**URL，HTTP方法，请求参数，标头和媒体类型**进行匹配。
 可以在类级别使用它来表示共享的映射，也可以在方法级别使用它来缩小到特定的端点映射。
@@ -754,64 +762,69 @@ public class MyConfig {
 + 获取处理程序方法。
 + 添加注册。
 
-### Handler Methods 控制器方法
-控制器方法具有灵活的签名，可以从支持的**控制器方法参数和返回值**中进行选择。
+### !!!Methods 方法
+```@RequestMapping``` 注解的方法具有灵活的签名，可以从一系列的方法参数和返回值中进行选择。
 
-#### 参数
-下表描述了受支持的控制器方法参数，任何参数均不支持反应性类型。
+#### !!!Method Arguments 参数
+控制器方法支持的参数：
 
-|控制器方法参数	|描述	|
+|控制器方法参数	|说明	|
 |--	|--	|
-|WebRequest， NativeWebRequest	|通用访问请求参数以及请求和会话属性，而无需直接使用Servlet API。	|
-|javax.servlet.ServletRequest， javax.servlet.ServletResponse	|选择任何特定的请求或响应类型	|
-|javax.servlet.http.HttpSession	|强制会话的存在。	|
-|javax.servlet.http.PushBuilder	|用于程序化HTTP / 2资源推送的Servlet 4.0推送构建器API。	|
-|java.security.Principal	|当前经过身份验证的用户-可能是特定的Principal实现类	|
-|HttpMethod	|请求的HTTP方法	|
-|java.util.Locale	|当前请求的语言环境，由最具体的LocaleResolver可用语言确定。	|
-|java.util.TimeZone + java.time.ZoneId	|与当前请求关联的时区，由LocaleContextResolver决定	|
-|java.io.InputStream， java.io.Reader	|用于访问Servlet API公开的原始请求正文	|
-|java.io.OutputStream， java.io.Writer	|用于访问Servlet API公开的原始响应正文。	|
-|@PathVariable	|用于访问URI模板变量。	|
-|@MatrixVariable	|用于访问URI路径段中的名称/值对。	|
-|@RequestParam	|用于访问Servlet请求参数。参数值将转换为声明的方法参数类型	|
-|@RequestHeader	|用于访问请求标头。标头值将转换为声明的方法参数类型。	|
-|@CookieValue	|用于访问cookie。Cookies值将转换为声明的方法参数类型。	|
-|@RequestBody	|用于访问HTTP请求正文。正文内容通过使用HttpMessageConverter实现转换为声明的方法参数类型。	|
-|HttpEntity<B>	|用于访问请求标头和正文。主体用HttpMessageConverter转换。	|
-|@RequestPart	|要访问multipart/form-data请求中的零件，请使用HttpMessageConverter转换零件的主体。	|
-|java.util.Map，org.springframework.ui.Model，org.springframework.ui.ModelMap	|用于访问HTML控制器中使用的模型，并作为视图渲染的一部分公开给模板。	|
-|RedirectAttributes	|指定在重定向的情况下使用的属性，并指定要临时存储的属性，直到重定向后的请求为止。	|
-|@ModelAttribute	|用于访问应用了数据绑定和验证的模型中的现有属性（如果不存在，则进行实例化）。	|
-|Errors， BindingResult	|用于访问命令对象（即，@ModelAttribute自变量）的验证和数据绑定中的错误，@RequestBody或访问a或自 @RequestPart变量的验证中的错误。您必须在经过验证的方法参数之后立即声明Errors或BindingResult参数。	|
-|SessionStatus + class-level @SessionAttributes	|为了标记表单处理完成，将触发清除通过类级@SessionAttributes注解声明的会话属性。	|
-|UriComponentsBuilder	|用于准备相对于当前请求的主机，端口，方案，上下文路径以及servlet映射的文字部分的URL。	|
-|@SessionAttribute	|与访问由于类级@SessionAttributes声明而存储在会话中的模型属性相反，用于访问任何会话属性。	|
-|@RequestAttribute	|用于访问请求属性	|
-|任何其他参数	|如果方法参数与该表中的任何较早值都不匹配，并且为简单类型（由BeanUtils＃isSimpleProperty确定 ，则将其解析为@RequestParam。否则，将其解析为@ModelAttribute。	|
+|```javax.servlet.ServletRequest```， ```javax.servlet.ServletResponse```	|选择任何特定的请求或响应类型，例如，```ServletRequest```、```HttpServletRequest```或Spring的```MultipartRequest```, ```MultipartHttpServletRequest```。	|
+|```javax.servlet.http.HttpSession```	|强制会话存在，这样的参数永远不会是空的。请注意，会话访问不是线程安全的，如果需要多个请求并发访问一个会话，请考虑将```RequestMappingHandlerAdapter```实例的```SynchronizeOnSession```标志设置为true。	|
+|```javax.servlet.http.PushBuilder```	|用于程序化HTTP/2资源推送的Servlet 4.0推送构建器API。请注意，根据Servlet规范，如果客户端不支持HTTP/2特性，则注入的PushBuilder实例可以为空。	|
+|```java.security.Principal```	|当前通过身份验证的用户。可能是特定的Principal实现类(如果已知)。	|
+|```java.io.InputStream```，```java.io.Reader```	|用于访问Servlet API公开的原始请求正文。	|
+|```java.io.OutputStream```， ```java.io.Writer```	|用于访问Servlet API公开的原始响应正文。	|
+|```java.util.Locale```	|当前请求区域设置，由可用的最具体的```LocaleResolver```(实际上是配置的```LocaleResolver```或```LocaleContextResolver```)确定。	|
+|```java.util.TimeZone``` + ```java.time.ZoneId```	|与当前请求关联的时区，由```LocaleContextResolver```确定。	|
+|```WebRequest```， ```NativeWebRequest```	|访问请求参数以及请求和会话的属性，代替直接使用Servlet API。	|
+|```HttpMethod```	|请求的HTTP方法	|
+|**```@RequestParam```**	|用于访问Servlet请求参数，包括multipart参数，参数值将转换为声明的方法参数类型。**对于简单类型的参数，@RequestParam是可选的**。	|
+|**```@ModelAttribute```**	|用于访问应用了数据绑定和验证的模型中的现有属性(如果不存在，则实例化)。使用@ModelAttribute是可选的。	|
+|```@PathVariable```	|用于访问URI模板变量。	|
+|```@MatrixVariable```	|用于访问URI路径段中的name-value变量。	|
+|```@RequestPart```	|用于访问```multipart/form-data```请求中的内容，使用```HttpMessageConverter```转换部件的正文。	|
+|**```@RequestHeader```**	|用于访问请求头。Header值转换为声明的方法参数类型。	|
+|**```@CookieValue```**	|用于访问Cookies。Cookies值将转换为声明的方法参数类型。	|
+|**```@RequestBody```**	|用于访问HTTP请求正文。正文内容通过使用```HttpMessageConverter```实现转换为声明的方法参数类型。。	|
+|**```HttpEntity<B>```**	|用于访问请求头和正文。正文使用HttpMessageConverter进行转换。	|
+|**```@RequestAttribute```**	|用于访问request属性	|
+|**```@SessionAttribute```**	|用于访问任何session属性	|
+|```java.util.Map```，```org.springframework.ui.Model```，```org.springframework.ui.ModelMap```	|用于访问在HTML控制器中使用并作为视图呈现的一部分公开给模板的模型。	|
+|```RedirectAttributes```	|指定在重定向时使用的属性(即追加到查询字符串中)和在重定向后请求之前临时存储的闪存属性。	|
+|```Errors```， ```BindingResult```	|用于访问命令对象（即，@ModelAttribute自变量）的验证和数据绑定中的错误，@RequestBody或访问a或自 @RequestPart变量的验证中的错误。您必须在经过验证的方法参数之后立即声明Errors或BindingResult参数。	|
+|```SessionStatus``` + ```@SessionAttributes```		|为了标记表单处理完成，将触发清除通过类级@SessionAttributes注解声明的会话属性。	|
+|```UriComponentsBuilder```		|用于准备相对于当前请求的主机，端口，方案，上下文路径以及servlet映射的文字部分的URL。	|
+|**其他参数**	|如果方法参数与该表中的任何值都不匹配。如果参数为简单类型（由BeanUtils＃isSimpleProperty确定），则将其解析为```@RequestParam```。否则，将其解析为```@ModelAttribute```。	|
 
-#### 返回值
+任何参数都不支持反应类型。
+
+JDK8的```java.util.Optional```可以与具有```required```属性的注解(例如@RequestParam、@RequestHeader等)结合使用，等同于```required=false```。
+
+#### !!!Return Values 返回值
 下表描述了受支持的控制器方法返回值，所有返回值都支持反应性类型。
+
 |控制器方法返回值	|描述	|
 |--	|--	|
-|@ResponseBody	|返回值通过HttpMessageConverter实现进行转换并写入响应。	|
-|HttpEntity<B>， ResponseEntity<B>	|指定完整响应（包括HTTP标头和正文）的返回值将通过HttpMessageConverter实现进行转换，并写入响应中。	|
-|HttpHeaders	|用于返回一个包含headers不包含body的响应。	|
-|String	|一个视图名称，将通过ViewResolver实现来解析，并与隐式模型一起使用。通过命令对象和@ModelAttribute方法确定	|
-|View	|View实例以使用用于与所述隐式模型一起渲染。通过命令对象和@ModelAttribute方法确定。	|
-|java.util.Map， org.springframework.ui.Model	|要添加到隐式模型的属性，视图名称通过RequestToViewNameTranslator隐式确定	|
-|@ModelAttribute	|要添加到模型的属性，视图名称通过RequestToViewNameTranslator隐式确定。	|
-|ModelAndView object	|要使用的视图和模型属性，以及响应状态（可选）	|
-|void	|如果具有void返回类型（或null返回值）的方法还具有ServletResponse，OutputStream参数或@ResponseStatus注解，则认为该方法已完全处理了响应	|
-|DeferredResult<V>	|从任何线程异步生成任何上述返回值-例如，由于某些事件或回调的结果。	|
-|Callable<V>	|在Spring MVC管理的线程中异步产生上述任何返回值。	|
-|ListenableFuture<V>， java.util.concurrent.CompletionStage<V>， java.util.concurrent.CompletableFuture<V>	|DeferredResult便捷替代	|
-|ResponseBodyEmitter， SseEmitter	|异步发出对象流，以将其写入 HttpMessageConverter实现中。	|
-|StreamingResponseBody	|OutputStream异步写入响应。也支持作为的主体 ResponseEntity。	|
-|反应类型-Reactor，RxJava或其他类型 ReactiveAdapterRegistry	|替代收集到的DeferredResult多值流（例如Flux，Observable）List。	|
-|任何其他返回值	|如果返回值不是由BeanUtils＃isSimpleProperty确定的简单类型，则该返回值与该表中的任何较早值都不匹配且为aString或被void视为视图名称（通过RequestToViewNameTranslator应用默认视图名称选择 ），前提是该返回值不是简单类型 。简单类型的值仍然无法解析。	|
+|**```@ResponseBody```**	|返回值通过```HttpMessageConverter```进行转换并写入响应。	|
+|**```HttpEntity<B>```**， **```ResponseEntity<B>```**	|指定完整响应(包括HTTP头和正文)的返回值将通过HttpMessageConverter实现进行转换并写入响应。	|
+|```HttpHeaders```	|用于返回有头而无正文的响应。	|
+|**```String```**	|一个视图名称，将通过```ViewResolver```实现来解析，并与隐式模型一起使用。通过命令对象和@ModelAttribute方法确定	|
+|```View```	|View实例以使用用于与所述隐式模型一起渲染。通过命令对象和@ModelAttribute方法确定。	|
+|```java.util.Map```， ```org.springframework.ui.Model```	|要添加到隐式模型的属性，视图名称通过RequestToViewNameTranslator隐式确定	|
+|```@ModelAttribute```	|要添加到模型的属性，视图名称通过RequestToViewNameTranslator隐式确定。	|
+|```ModelAndView``` object	|要使用的视图和模型属性，以及响应状态（可选）	|
+|**```void```**	|如果具有void返回类型(或NULL返回值)的方法，还具有ServletResponse、OutputStream参数或@ResponseStatus注释，则认为该方法已完全处理了响应。如果控制器进行了肯定的ETag或lastModified时间戳检查，则也是如此。如果上述情况都不成立，则void返回类型还可以为REST控制器指示“无响应正文”，或者为HTML控制器指示默认的视图名称选择。	|
+|```DeferredResult<V>```	|从任何线程异步生成任何上述返回值-例如，由于某些事件或回调的结果。	|
+|```Callable<V>```	|在SpringMVC管理的线程中异步产生上述任何返回值。	|
+|```ListenableFuture<V>```， ```java.util.concurrent.CompletionStage<V>```， ```java.util.concurrent.CompletableFuture<V>```	|为了方便起见(例如，当底层服务返回其中之一时)，可以替代DeferredResult。	|
+|```ResponseBodyEmitter```， ```SseEmitter```	|使用HttpMessageConverter实现异步发出要写入响应的对象流。也支持作为ResponseEntity的主体。	|
+|```StreamingResponseBody```	|异步写入响应OutputStream。也支持作为ResponseEntity的主体	|
+|```Reactive types```	|DeferredResult的替代方法，将多值流(例如，Flux、Observable)收集到列表中。对于流场景(例如，文本/事件流、应用程序/json+流)，改为使用SseEmitter和ResponseBodyEmitter，其中ServletOutputStream阻塞I/O在Spring MVC管理的线程上执行，并在每次写入完成时施加背压。。	|
+|```其他返回值```	|任何返回值如果与此表中任何较早的值都不匹配，并且是字符串或空，则被视为视图名称。	|
 
-#### 类型转换
+#### Type Conversion 类型转换
 一些控制器方法的参数是以String为基础的输入（如 @RequestParam，@RequestHeader，@PathVariable，@MatrixVariable，和@CookieValue），如果参数被声明为非String类型，则可以进行类型转换。
 
 默认情况下，已经支持简单的类型（int，long，Date等）。
@@ -1199,7 +1212,7 @@ public String handle(@Valid @RequestPart("meta-data") MetaData metadata,
 ```
 
 
-#### @RequestBody
+#### !!!@RequestBody
 使用@RequestBody注解，通过HttpMessageConverter读取请求体并反序列化到一个Object。
 下面的示例使用一个@RequestBody参数：
 ```
@@ -1219,7 +1232,7 @@ public void handle(@Valid @RequestBody Account account, BindingResult result) {
 }
 ```
 
-#### HttpEntity
+#### !!!HttpEntity
 HttpEntity与@RequestBody大致相同，但基于公开请求标头和正文的容器对象。
 以下显示了一个示例：
 ```
@@ -1229,7 +1242,7 @@ public void handle(HttpEntity<Account> entity) {
 }
 ```
 
-#### @ResponseBody
+#### !!!@ResponseBody
 @ResponseBody注解在方法上使用，通过HttpMessageConverter将返回序列化为响应主体。
 以下显示了一个示例：
 ```
@@ -1241,7 +1254,7 @@ public Account handle() {
 ```
 @ResponseBody在类级别也受支持，在这种情况下，它由所有控制器方法继承。
 
-#### ResponseEntity
+#### !!!ResponseEntity
 ResponseEntity使用和@ResponseBody类似，但带有状态和标题。例如：
 ```
 @GetMapping("/something")
@@ -1251,6 +1264,86 @@ public ResponseEntity<String> handle() {
     return ResponseEntity.ok().eTag(etag).build(body);
 }
 ```
+
+使用ResponseEntity<Resource>进行文件下载。例如：
+```
+@GetMapping("/files/{filename:.+}")
+@ResponseBody
+public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
+
+	Resource file = storageService.loadAsResource(filename);
+	return ResponseEntity
+			.ok()
+			.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
+			.body(file);
+}
+
+public Resource loadAsResource(String filename) {
+		try {
+			Path file = load(filename);
+			Resource resource = new UrlResource(file.toUri());
+			if(resource.exists() || resource.isReadable()) {
+				return resource;
+			}
+			else {
+				throw new StorageFileNotFoundException("Could not read file: " + filename);
+
+			}
+		} catch (MalformedURLException e) {
+			throw new StorageFileNotFoundException("Could not read file: " + filename, e);
+		}
+	}
+```
+
+使用ResponseEntity<Resource>进行文件下载。例如：
+```
+@RequestMapping(value = "/file", method = RequestMethod.GET)
+	public ResponseEntity<Resource> downloadFile() {
+		ByteArrayOutputStream bos = null;
+		String filename = "测试.xlsx";
+		try {
+			Workbook workbook = createExcel();
+			bos = new ByteArrayOutputStream();
+			workbook.write(bos);
+			workbook.close();
+
+			HttpHeaders headers = new HttpHeaders();
+			headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
+			headers.add("Pragma", "no-cache");
+			headers.add("Expires", "0");
+			headers.add("charset", "utf-8");
+			//设置下载文件名
+			filename = URLEncoder.encode(filename, "UTF-8");
+			headers.add("Content-Disposition", "attachment;filename=\"" + filename + "\"");
+
+			Resource resource = new InputStreamResource(new ByteArrayInputStream(bos.toByteArray()));
+			return ResponseEntity.ok().headers(headers).contentType(MediaType.parseMediaType("application/x-msdownload")).body(resource);
+		} catch (IOException e) {
+			if (null != bos) {
+				try {
+					bos.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+		}
+		return null;
+	}
+```
+
+可以绕过消息转换并直接流式传输到响应（用于文件下载）。可以使用StreamingResponseBody 返回值类型来执行此操作：
+```
+@GetMapping("/download")
+public StreamingResponseBody handle() {
+    return new StreamingResponseBody() {
+        @Override
+        public void writeTo(OutputStream outputStream) throws IOException {
+            // write...
+        }
+    };
+}
+```
+可以将StreamingResponseBody用作ResponseEntity的body，来自定义响应的状态和标题。
 
 #### Jackson JSON
 Spring提供了对 Jackson JSON库的支持。
@@ -1412,7 +1505,7 @@ public class FormController {
 }
 ```
 
-### Exceptions 异常
+### !!!Exceptions 异常
 @Controller和@ControllerAdvice类可以声明使用@ExceptionHandler注解的方法，用于处理控制器方法的异常。
 
 如以下示例所示：
@@ -1462,7 +1555,7 @@ public ResponseEntity<String> handle(Exception ex) {
 
 **Spring MVC对@ExceptionHandler的支持使用了HandlerExceptionResolver机制，建立在DispatcherServlet级别上。**
 
-#### 方法参数
+#### !!!Method Arguments 方法参数
 @ExceptionHandler 方法支持以下参数：
 
 |方法参数	|描述	|
@@ -1483,7 +1576,7 @@ public ResponseEntity<String> handle(Exception ex) {
 |@SessionAttribute	|与访问由于类级@SessionAttributes声明而存储在会话中的模型属性相反，用于访问任何会话属性。	|
 |@RequestAttribute	|用于访问请求属性。	|
 
-#### 返回值
+#### !!!Return Values 返回值
 @ExceptionHandler 方法支持以下返回值：
 
 |返回值	|描述	|
@@ -1498,7 +1591,7 @@ public ResponseEntity<String> handle(Exception ex) {
 |void	|方法返回void（或null返回值）被认为已经完全处理的响应，如果它也具有ServletResponse一个OutputStream参数，或@ResponseStatus注解。如果控制器进行了肯定ETag或lastModified时间戳检查，则情况也是如此 	|
 |任何其他返回值	|如果返回值与上述任何一个都不匹配且不是简单类型，则默认情况下会将其视为要添加到模型的模型属性。如果是简单类型，则仍然无法解析。	|
 
-#### REST API 异常
+#### REST API exceptions RESTAPI异常
 REST服务的常见要求是在响应正文中包含错误详细信息。
 
 Spring框架不会自动执行此操作，因为响应主体中错误详细信息的表示是特定于应用程序的。
@@ -1509,7 +1602,7 @@ Spring框架不会自动执行此操作，因为响应主体中错误详细信�
 实现在响应主体中具有错误详细信息的全局异常处理的应用程序，可以考虑继承 ResponseEntityExceptionHandler，它提供对Spring MVC引发的异常的处理，并提供用于自定义响应主体的钩子。
 要使用此功能，请创建一个的子类 ResponseEntityExceptionHandler，用对其进行注解@ControllerAdvice，覆盖必要的方法，然后将其声明为Spring bean。
 
-### Controller Advice
+### !!!Controller Advice
 通常@ExceptionHandler，@InitBinder和@ModelAttribute方法适用于@Controller声明的类。
 如果要使此类方法应用于全局，则可以在带有@ControllerAdvice或@RestControllerAdvice的类中声明它们。
 
@@ -1532,14 +1625,14 @@ public class ExampleAdvice2 {}
 public class ExampleAdvice3 {}
 ```
 
-## Functional Endpoints
+## Functional Endpoints 函数节点
 Spring Web MVC包含WebMvc.fn，这是一个轻量级的函数编程模型，其中的函数用于路由和处理请求，而契约则是为不变性而设计的。
 
 它是基于注解的编程模型的替代方案，但可以在同一DispatcherServlet上运行。
 
 略
 
-## URI链接
+## URI Links URI链接
 Spring框架中可用于URI的各种选项。
 
 ### UriComponents
@@ -1761,11 +1854,11 @@ public class PersonAddressController {
 <a href="${s:mvcUrl('PAC#getAddress').arg(0,'US').buildAndExpand('123')}">Get Address</a>
 ```
 
-## 异步请求
-Spring MVC与Servlet 3.0异步请求处理具有广泛的集成 ：
-+ DeferredResult和Callable 控制器方法中的返回值，并为单个异步返回值提供基本支持。
-+ 控制器可以流式传输多个值，包括 SSE和原始数据。
-+ 控制器可以使用反应式客户端并返回 反应式类型以进行响应处理。
+## !!!Asynchronous Requests 异步请求
+Spring MVC与Servlet3.0异步请求处理进行了广泛的集成：
++ 控制器方法中的```DeferredResult```和```Callable```返回值，并为单个异步返回值提供基本支持。
++ 控制器可以流式传输多个值，包括```SSE```和```原始数据```。
++ 控制器可以使用反应式客户端并返回```reactive types```以进行响应处理。
 
 ### DeferredResult
 一旦在Servlet容器中启用了异步请求处理功能，控制器方法就可以使用DeferredResult来包装任何受支持的控制器方法返回值。
@@ -1847,7 +1940,7 @@ Spring MVC甚至支持流，包括反应背压。、但是，与WebFlux不同，
 
 另一个根本区别在于Spring MVC的不支持在控制器方法参数异步或反应性类型（例如，@RequestBody，@RequestPart，和其它物质），也不会具有用于异步和反应类型作为模型属性的任何显式支持。Spring WebFlux确实支持所有这些。
 
-### HTTP流
+### !!!HTTP流
 您可以将DeferredResult和Callable用于**单个异步返回值**。
 如果要产生多个异步值并将那些值写入响应，该怎么办？本节介绍如何执行此操作。
 
@@ -1901,9 +1994,9 @@ emitter.complete();
 虽然SSE是流式传输到浏览器的主要选项，但请注意Internet Explorer不支持服务器发送事件。
 考虑将Spring的WebSocket消息与 针对各种浏览器的SockJS后备传输（包括SSE）一起使用。
 
-#### Raw Data
+#### !!!Raw Data
 有时，绕过消息转换并直接流式传输到响应很有用（例如，用于文件下载）。
-您可以使用StreamingResponseBody 返回值类型来执行此操作，如以下示例所示：
+您可以使用```StreamingResponseBody```返回值类型来执行此操作，如以下示例所示：
 ```
 @GetMapping("/download")
 public StreamingResponseBody handle() {
@@ -1962,7 +2055,7 @@ MVC配置公开了以下与异步请求处理相关的选项：
 请注意，可以在DeferredResult，ResponseBodyEmitter 和 SseEmitter 上设置默认超时值。
 对于Callable，可以使用 WebAsyncTask提供超时值。
 
-## CORS 跨域
+## !!!CORS 跨域
 Spring MVC可以处理CORS（Cross-Origin Resource Sharing 跨源资源共享）。
 
 ### 简介
@@ -2134,11 +2227,11 @@ source.registerCorsConfiguration("/**", config);
 CorsFilter filter = new CorsFilter(source);
 ```
 
-## 网络安全
+## Web Security 网络安全
 在Spring Security的项目提供了保护Web应用程序免受恶意攻击的支持。
 请参阅[Spring Security参考文档](https://spring.io/projects/spring-security)。
 
-## HTTP缓存
+## HTTP Caching HTTP缓存
 HTTP缓存可以显着提高Web应用程序的性能。
 
 HTTP缓存围绕Cache-Control响应标头以及随后的条件请求标头（例如Last-Modified和ETag）展开。
@@ -2224,7 +2317,7 @@ public String myHandleMethod(WebRequest request, Model model) {
 ### ETag Filter
 您可以使用ShallowEtagHeaderFilter来添加eTag根据响应内容计算得出的“浅”值，从而节省带宽，但不节省CPU时间。
 
-## 视图技术
+## View Technologies 视图技术
 ### Thymeleaf
 Thymeleaf是一种现代的服务器端Java模板引擎，它强调可以在浏览器中预览的自然HTML模板，而无需使用正在运行的服务器，这对于独立处理UI模板（例如，由设计人员）非常有用。
 
@@ -2380,11 +2473,11 @@ MappingJackson2XmlView 使用 Jackson的XML扩展XmlMapper 将响应内容渲染
 ### XSLT Views
 略
 
-## !!!MVC配置
-MVC Java配置和MVC XML名称空间提供适用于大多数应用程序的默认配置以及用于自定义它的配置API。
+## !!!MVC Config MVC配置
+MVC的Java配置和MVC的XML命名空间，提供了适用于大多数应用程序的默认配置以及用于自定义它的配置API。
 
-### 启用MVC配置
-在Java配置中，可以使用@EnableWebMvc注解启用MVC配置，如以下示例所示：
+### Enable MVC Config 启用MVC配置
+在Java配置中，可以使用```@EnableWebMvc```注解启用MVC配置，如以下示例所示：
 ```
 @Configuration
 @EnableWebMvc
@@ -2392,7 +2485,7 @@ public class WebConfig {
 }
 ```
 
-在XML配置中，可以使用<mvc:annotation-driven>元素来启用MVC配置，如以下示例所示：
+在XML配置中，可以使用```<mvc:annotation-driven>```元素来启用MVC配置，如以下示例所示：
 ```
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
@@ -2409,7 +2502,7 @@ public class WebConfig {
 </beans>
 ```
 
-### MVC Config API
+### MVC Config API MVC配置API
 在Java配置中，可以实现该WebMvcConfigurer接口，如以下示例所示：
 ```
 @Configuration
@@ -2420,9 +2513,24 @@ public class WebConfig implements WebMvcConfigurer {
 }
 ```
 
-在XML中，可以查看<mvc:annotation-driven/>的属性和子元素。
+在XML中，您可以查看```<mvc：Annotation-Driven/>```的属性和子元素。相关XML协议如下所示：
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/mvc
+        https://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
-### Type Conversion
+    <mvc:annotation-driven/>
+
+</beans>
+```
+
+### Type Conversion 类型转换
 默认情况下，将安装各种数字和日期类型的格式化程序，并支持通过@NumberFormat和@DateTimeFormat在字段上进行自定义。
 
 要在Java配置中注册自定义格式器和转换器，请使用以下命令：
@@ -2493,7 +2601,7 @@ public class WebConfig implements WebMvcConfigurer {
 }
 ```
 
-### Validation
+### Validation 参数验证
 默认情况下，如果Bean验证存在于类路径中（例如，Hibernate Validator），则将LocalValidatorFactoryBean其注册为全局验证器，以@Valid与 Validated控制器方法参数一起使用。
 
 在Java配置中，您可以自定义全局Validator实例，如以下示例所示：
@@ -2539,7 +2647,7 @@ public class MyController {
 
 ```
 
-### Interceptors
+### Interceptors 拦截器
 在Java配置中，您可以注册拦截器以应用于传入的请求，如以下示例所示：
 ```
 @Configuration
@@ -2607,9 +2715,11 @@ public class WebConfig implements WebMvcConfigurer {
 ```
 
 ### Message Converters
-可以通过覆盖configureMessageConverters() 或覆盖 extendMessageConverters() 来自定义HttpMessageConverter。
+您可以在Java配置中自定义```HttpMessageConverter```。
+通过重写方法```configureMessageConverters()```，替换Spring MVC创建的默认转换器。
+通过重写方法```extendMessageConverters()```，向默认转换器添加额外的转换器。
 
-以下示例使用自定义的ObjectMapper而不是默认的添加了XML和Jackson JSON转换器 ：
+以下示例通过自定义的```ObjectMapper```，添加了一个的XML和JSON转换器来代替默认的转换器：
 ```
 @Configuration
 @EnableWebMvc
@@ -2621,6 +2731,7 @@ public class WebConfiguration implements WebMvcConfigurer {
                 .indentOutput(true)
                 .dateFormat(new SimpleDateFormat("yyyy-MM-dd"))
                 .modulesToInstall(new ParameterNamesModule());
+				
         converters.add(new MappingJackson2HttpMessageConverter(builder.build()));
         converters.add(new MappingJackson2XmlHttpMessageConverter(builder.createXmlMapper(true).build()));
     }
@@ -2648,9 +2759,9 @@ public class WebConfiguration implements WebMvcConfigurer {
 <bean id="xmlMapper" parent="objectMapper" p:createXmlMapper="true"/>
 ```
 
-在前面的例子中， Jackson2ObjectMapperBuilder 用于创建两种共同的构成MappingJackson2HttpMessageConverter和 MappingJackson2XmlHttpMessageConverter与缩进启用，定制的日期格式，和登记 jackson-module-parameter-names，这增加了用于访问参数名称（在Java中8增加了一个功能）的支持。
+在前面的示例中，```Jackson2ObjectMapperBuilder```用于为```MappingJackson2HttpMessageConverter```和```MappingJackson2XmlHttpMessageConverter```创建通用配置。配置包括：启用缩进、定制日期格式以及注册Jackson模块参数名称，
 
-该构建器自定义Jackson的默认属性，如下所示：
+此构建器自定义Jackson的默认属性如下所示：
 + DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES 被禁用。
 + MapperFeature.DEFAULT_VIEW_INCLUSION 被禁用。
 

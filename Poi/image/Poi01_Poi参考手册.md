@@ -109,6 +109,36 @@ SXSSF通过限制对滑动窗口内的行的访问来实现其低内存占用，
 + 不支持Sheet.clone（）。
 + 不支持公式评估。
 
+### 基本API
+```
+// 创建工作簿
+Workbook wb = new HSSFWorkbook();
+Workbook wb = new XSSFWorkbook();
+
+// 创建表（通过工作簿）
+Sheet sheet1 = wb.createSheet("sheet1");
+
+// 创建单元格格式（通过工作簿，单元格格式可复用）
+CellStyle cellStyle = wb.createCellStyle();
+cellStyle.setDataFormat(createHelper.createDataFormat().getFormat("m/d/yy h:mm"));
+
+// 创建行（通过表，行从0开始）
+Row row = sheet.createRow(0);
+
+// 创建单元格（通过行）
+Cell cell = row.createCell(0);
+// 设置单元格的值
+cell.setCellValue(1);
+// 设置单元格的格式
+cell.setCellStyle(cellStyle);
+
+// 保存文件（通过工作簿）
+try (OutputStream fileOut = new FileOutputStream("workbook.xlsx")) {
+    wb.write(fileOut);
+}
+
+```
+
 ## 快速入门
 ### !!!打开工作薄
 当打开一个工作簿（.xls HSSFWorkbook 或.xlsx XSSFWorkbook）时，可以从File 或 InputStream加载工作簿。
@@ -248,7 +278,7 @@ try (InputStream inp = new FileInputStream("workbook.xls")) {
 ```
 
 
-### !!!创建工作簿
+### 创建工作簿
 ```
 Workbook wb = new HSSFWorkbook();
 ...
@@ -309,7 +339,6 @@ try (OutputStream fileOut = new FileOutputStream("workbook.xls")) {
 ### 创建日期单元格
 ```
 Workbook wb = new HSSFWorkbook();
-
 
 CreationHelper createHelper = wb.getCreationHelper();
 
@@ -674,43 +703,128 @@ try (OutputStream fileOut = new FileOutputStream("ooxml-newlines.xlsx")) {
 wb.close();
 ```
 
-### 文件与InputStreams
-### 对齐细胞
-### 边界处理
-### 合并细胞
-### 使用字体
-### 自定义颜色
-### 读写
-### 在单元格中使用换行符。
-### 创建用户定义的数据格式
-### 将工作表调整为一页
-### 设置纸张的打印区域
-### 在工作表的页脚上设置页码
-### 排行
-### 将工作表设置为选中状态
-### 设置图纸的缩放倍率
-### 创建拆分和冻结窗格
-### 重复行和列
-### 页眉和页脚
-### XSSF对页眉和页脚的增强
-### 绘图形状
-### 造型形状
-### 形状和图形
-### 概述
-### 图片
-### 命名范围和命名单元格
-### 如何设置单元格注释
-### 如何调整列宽以适合内容
-### 超连结
-### 资料验证
-### 嵌入式对象
-### 自动过滤器
-### 条件格式
-### 隐藏和取消隐藏行
-### 设置单元格属性
-### 绘制边框
-### 创建数据透视表
-### 具有多种样式的单元格
+### 格式化数据
+```
+Workbook wb = new HSSFWorkbook();
+Sheet sheet = wb.createSheet("format sheet");
+
+CellStyle style;
+DataFormat format = wb.createDataFormat();
+
+Row row;
+Cell cell;
+int rowNum = 0;
+int colNum = 0;
+
+row = sheet.createRow(rowNum++);
+cell = row.createCell(colNum);
+cell.setCellValue(11111.25);
+style = wb.createCellStyle();
+style.setDataFormat(format.getFormat("0.0"));
+cell.setCellStyle(style);
+
+row = sheet.createRow(rowNum++);
+cell = row.createCell(colNum);
+cell.setCellValue(11111.25);
+style = wb.createCellStyle();
+style.setDataFormat(format.getFormat("#,##0.0000"));
+cell.setCellStyle(style);
+
+try (OutputStream fileOut = new FileOutputStream("workbook.xls")) {
+    wb.write(fileOut);
+}
+wb.close();
+```
+
+### 设置工作表为一页
+```
+Workbook wb = new HSSFWorkbook();
+
+Sheet sheet = wb.createSheet("format sheet");
+PrintSetup ps = sheet.getPrintSetup();
+sheet.setAutobreaks(true);
+ps.setFitHeight((short)1);
+ps.setFitWidth((short)1);
+
+try (OutputStream fileOut = new FileOutputStream("workbook.xls")) {
+    wb.write(fileOut);
+}
+wb.close();
+```
+
+### 设置打印区域
+```
+Workbook wb = new HSSFWorkbook();
+Sheet sheet = wb.createSheet("Sheet1");
+
+// 设置第一张纸的打印区域
+wb.setPrintArea(0, "$A$1:$C$2");
+// 或者
+wb.setPrintArea(
+        0, //sheet index
+        0, //start column
+        1, //end column
+        0, //start row
+        0  //end row
+);
+
+try (OutputStream fileOut = new FileOutputStream("workbook.xls")) {
+    wb.write(fileOut);
+}
+wb.close();
+```
+
+### 设置页码
+```
+Workbook wb = new HSSFWorkbook(); // or new XSSFWorkbook();
+
+Sheet sheet = wb.createSheet("format sheet");
+
+Footer footer = sheet.getFooter();
+footer.setRight( "Page " + HeaderFooter.page() + " of " + HeaderFooter.numPages() );
+
+try (OutputStream fileOut = new FileOutputStream("workbook.xls")) {
+    wb.write(fileOut);
+}
+wb.close();
+```
+
+### 使用快捷方法
+便利功能提供了实用功能，例如在合并区域周围设置边框以及更改样式属性而无需显式创建新样式。
+```
+Workbook wb = new HSSFWorkbook();  // or new XSSFWorkbook()
+Sheet sheet1 = wb.createSheet( "new sheet" );
+
+// 创建合并区域
+Row row = sheet1.createRow( 1 );
+Row row2 = sheet1.createRow( 2 );
+Cell cell = row.createCell( 1 );
+cell.setCellValue( "This is a test of merging" );
+CellRangeAddress region = CellRangeAddress.valueOf("B2:E5");
+sheet1.addMergedRegion( region );
+
+// 设置边框和边框颜色
+RegionUtil.setBorderBottom( BorderStyle.MEDIUM_DASHED, region, sheet1, wb );
+RegionUtil.setBorderTop(    BorderStyle.MEDIUM_DASHED, region, sheet1, wb );
+RegionUtil.setBorderLeft(   BorderStyle.MEDIUM_DASHED, region, sheet1, wb );
+RegionUtil.setBorderRight(  BorderStyle.MEDIUM_DASHED, region, sheet1, wb );
+RegionUtil.setBottomBorderColor(IndexedColors.AQUA.getIndex(), region, sheet1, wb);
+RegionUtil.setTopBorderColor(   IndexedColors.AQUA.getIndex(), region, sheet1, wb);
+RegionUtil.setLeftBorderColor(  IndexedColors.AQUA.getIndex(), region, sheet1, wb);
+RegionUtil.setRightBorderColor( IndexedColors.AQUA.getIndex(), region, sheet1, wb);
+
+// 显示HSSFCellUtil的一些用法
+CellStyle style = wb.createCellStyle();
+style.setIndention((short)4);
+CellUtil.createCell(row, 8, "This is the value of the cell", style);
+Cell cell2 = CellUtil.createCell( row2, 8, "This is the value of the cell");
+CellUtil.setAlignment(cell2, HorizontalAlignment.CENTER);
+
+try (OutputStream fileOut = new FileOutputStream( "workbook.xls" )) {
+    wb.write( fileOut );
+}
+wb.close();
+```
 
 # PowerPoint (HSLF/XSLF)
 # Word (HWPF/XWPF)
