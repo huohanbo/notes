@@ -32,7 +32,7 @@ Bean是由Spring IoC容器实例化，组装和管理的对象。否则，bean�
 
 Bean及其之间的依赖关系反映在容器使用的配置元数据中。
 
-## 容器概述
+## !!!容器概述
 org.springframework.context.ApplicationContext接口 代表IoC容器，并负责实例化，配置和组装Bean。
 容器通过读取配置元数据获取有关要实例化，配置和组装哪些对象的指令。
 配置元数据可以使用XML，Java注解或Java代码，从而表示组成应用程序的对象以及这些对象之间的丰富相互依赖关系。
@@ -76,7 +76,7 @@ Spring IoC容器配置一组元数据。此配置元数据表示您作为应用�
 + id属性 是标识单个bean定义的字符串。
 + class属性 定义Bean的类型并使用完全限定的类名。
 
-### 实例化容器
+### !!!实例化容器
 给 ApplicationContext构造函数 提供一个或多个位置路径，即资源字符串，可让容器从各种外部资源（例如本地文件系统，Java等）中加载配置元数据CLASSPATH。
 ```
 ApplicationContext context = new ClassPathXmlApplicationContext("services.xml", "daos.xml");
@@ -142,7 +142,7 @@ bean的定义跨越多个XML文件可能很常见，每个单独的XML配置文�
 + 可以使用相对路径 “ ../” 引用父目录中的文件，但不建议。
 + 可以使用完全限定资源位置来代替相对路径：例如file:C:/config/services.xml或classpath:/config/services.xml。最好为这样的绝对位置保留一个间接寻址“$ {…}”占位符。
 
-### 使用容器
+### !!!使用容器
 ApplicationContext是一个维护bean定义以及相互依赖的注册表的高级工厂的接口。
 通过使用方法 T getBean(String name, Class<T> requiredType)，可以检索bean的实例。
 
@@ -168,7 +168,7 @@ context.refresh();
 实际上，您的应用程序代码应该根本不调用该 getBean()方法，因此完全不依赖于Spring API。
 例如，Spring与Web框架的集成为各种Web框架组件（例如控制器和JSF管理的Bean）提供了依赖项注入，使您可以通过元数据（例如自动装配注解）声明对特定Bean的依赖项。
 
-## Bean概述
+## !!!Bean概述
 Spring IoC容器管理一个或多个bean。这些bean是使用您提供给容器的配置元数据创建的（例如，以XML<bean/>定义的形式 ）。
 
 在容器本身内，这些bean定义表示为 BeanDefinition 对象，这些对象包含（除其他信息外）以下元数据：
@@ -1547,7 +1547,7 @@ Bean定义可以包含许多配置信息，包括构造函数参数，属性值�
 
 ### 使用FactoryBean自定义实例化逻辑
 
-## 基于注解的容器配置
+## !!!基于注解的容器配置
 **注解配置比XML配置更好吗？**
 
 每种方法都有其优缺点，通常由开发人员决定哪种策略更适合他们。
@@ -2060,14 +2060,14 @@ public class CachingMovieLister {
 }
 ```
 
-## 类路径扫描和组件管理
+## !!!类路径扫描和组件管理
 可以通过扫描类路径来隐式检测候选组件的选项，候选组件是与过滤条件匹配的类，并具有在容器中注册的相应bean定义。
 
 可以使用注解（例如@Component），AspectJ类型表达式或您自己的自定义过滤条件来选择哪些类在容器中注册了bean定义。
 	
 从Spring 3.0开始，Spring JavaConfig项目提供的许多功能是核心Spring Framework的一部分，这使得可以使用Java而不是使用传统的XML文件来定义bean。
 
-### @Component和其他组件注解
+### !!!@Component和其他组件注解
 Spring提供一系列组件注解：@Component，@Repository，@Service，和 @Controller。
 
 @Component是任何Spring托管组件的通用构造型。
@@ -2092,7 +2092,7 @@ public @interface Service {
 }
 ```
 
-### 自动扫描
+### !!!自动扫描
 **Spring可以自动检测构造型类，并使用ApplicationContext来注册相应的BeanDefinition实例。**
 
 例如，以下两个类别有资格进行这种自动检测：
@@ -2354,8 +2354,8 @@ public class CachingMovieCatalog implements MovieCatalog {
 ### @Named和@ManagedBean
 ### JSR-330标准注解的局限性
 
-## 基于Java的容器配置
-### @Bean和@Configuration
+## !!!基于Java的容器配置
+### !!!@Bean和@Configuration
 Spring中支持的Java配置主要是 @Configuration注解的类 和 @Bean注解的方法。
 
 @Bean注解被用于指示一个方法实例，可以配置并初始化到由Spring IoC容器进行管理的新对象。
@@ -2753,8 +2753,8 @@ clientDao()被clientService1()和clientService2()分别调用了一次。
 但这在在Spring中肯定是有问题的，实例化的bean在默认情况下具有singleton作用域，这就是神奇的地方，所有@Configuration类在启动时都使用CGLIB子类化。
 在子类中，子方法在调用父方法并创建新实例之前，首先检查容器中是否有任何缓存（作用域）的bean。
 
-### 组合基于Java的配置
-#### @Import注解
+### !!!组合基于Java的配置
+#### !!!@Import注解
 正如XML文件中的import元素来帮助模块化配置一样，@Import注解允许@Bean从另一个配置类加载配置信息。
 如以下示例所示：
 ```
@@ -2827,7 +2827,7 @@ public static void main(String[] args) {
 }
 ```
 
-#### 有条件地启用@Configuration类或@Bean方法
+#### !!!有条件地启用@Configuration类或@Bean方法
 基于某些系统状态，有条件地启用或禁用@Configuration类或@Bean方法通常很有用。
 
 @Profile 注解可以在Spring中启用了特定环境的配置文件时才激活Bean。
@@ -2853,7 +2853,7 @@ public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata)
 }
 ```
 
-#### Java配置和XML配置结合使用
+#### !!!Java配置和XML配置结合使用
 Spring的@Configuration类支持并不旨在100％完全替代Spring XML。某些工具（例如Spring XML名称空间）仍然是配置容器的理想方法。
 
 可以使用ClassPathXmlApplicationContext，以“以XML为主”的方式实例化容器。
@@ -2912,7 +2912,7 @@ public static void main(String[] args) {
 }
 ```
 
-使用context:component-scan扫描@Configuration类。
+使用```context:component-scan```扫描```@Configuration```类。
 这种情况下，无需声明 context:annotation-config，因为context:component-scan启用了相同的功能。
 system-test-config.xml文件修改后如下：
 ```
@@ -2974,7 +2974,7 @@ public static void main(String[] args) {
 }
 ```
 	
-## Environment 环境信息抽象管理
+## !!!Environment 环境信息抽象管理
 Environment接口是集成在容器中的抽象，可以对应用程序环境的两个关键方面进行建模：profile 和 properties。
 
 profile是仅在给定概要文件处于活动状态时才向容器注册的Bean定义的命名逻辑组。可以将Bean分配给profile，无论是以XML定义还是带有注释。

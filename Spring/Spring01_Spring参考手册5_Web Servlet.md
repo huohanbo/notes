@@ -67,7 +67,7 @@ public class MyWebApplicationInitializer implements WebApplicationInitializer {
 </web-app>
 ```
 
-Spring Boot遵循不同的初始化顺序。
+**Spring Boot遵循不同的初始化顺序。**
 Spring Boot并没有陷入Servlet容器的生命周期，而是使用Spring配置来引导自身和嵌入式Servlet容器。
 
 ### Context Hierarchy 上下文结构
@@ -104,7 +104,7 @@ public class MyWebAppInitializer extends AbstractAnnotationConfigDispatcherServl
     }
 }
 ```
-如果不需要应用程序上下文层次结构，则应用程序可以通过getRootConfigClasses()和null从返回所有配置getServletConfigClasses()。
+**如果不需要应用程序上下文层次结构，则可以通过从```getRootConfigClasses()```和```getServletConfigClasses()```返回null配置。**
 
 以下示例显示了web.xml等效项：
 ```
@@ -134,7 +134,45 @@ public class MyWebAppInitializer extends AbstractAnnotationConfigDispatcherServl
     </servlet-mapping>
 </web-app>
 ```
-如果不需要应用程序上下文层次结构，则应用程序可以仅配置“根”上下文，并将Servlet的contextConfigLocation参数保留为空。
+**如果不需要应用程序上下文层次结构，则应用程序可以仅配置“根”上下文，并将Servlet的```contextConfigLocation```参数保留为空。**
+
+#### Spring Web应用中三个上下文
+在Spring web应用中有三个上下文：spring root上下文（WebApplicationContext）、spring mvc上下文（WebApplicationContext）和web应用上下文(ServletContext)。
+
+要想很好理解这三个上下文的关系，需要先熟悉spring是怎样在web容器中启动起来的。
+
+spring的启动过程其实就是其IoC容器的启动过程，对于web程序，IoC容器启动过程即是建立上下文的过程。
+
+spring的启动过程：
+一个web应用，其部署在web容器中，web容器提供其一个全局的上下文环境，这个上下文就是ServletContext，其为后面的spring IoC容器提供宿主环境。
+在常见的应用web.xml中，有提供一个```org.springframework.web.context.ContextLoaderListener```。
+在web容器启动时，会触发容器初始化事件，此时contextLoaderListener会监听到这个事件，其contextInitialized方法会被调用。
+在这个方法中，spring会初始化一个启动上下文，这个上下文被称为根上下文，即```WebApplicationContext```。
+这是一个接口类，实际的实现类是```XmlWebApplicationContext```。
+这个就是spring的IoC容器，其对应的Bean定义的配置由web.xml中的context-param标签定义的```contextConfigLocation```参数指定。
+在这个IoC容器初始化完毕后，spring以```WebApplicationContext.ROOTWEBAPPLICATIONCONTEXTATTRIBUTE```为属性Key，将其存储到ServletContext中，便于获取。
+
+contextLoaderListener监听器初始化完毕后，开始初始化web.xml中配置的Servlet，这个servlet可以配置多个。
+以Spring web应用中的DispatcherServlet为例，这个servlet实际上是一个标准的前端控制器，用以转发、匹配、处理每个servlet请求。
+DispatcherServlet上下文在初始化的时候会建立自己的IoC上下文，用以持有spring mvc相关的bean。
+DispatcherServlet在建立自己的IoC上下文时，会利用```WebApplicationContext.ROOTWEBAPPLICATIONCONTEXTATTRIBUTE```先从```ServletContext```中获取之前的**根上下文**(即```WebApplicationContext```)作为自己上下文的```parent```上下文。有了这个parent上下文之后，再初始化自己持有的上下文。
+DispatcherServlet初始化自己上下文的工作在其initStrategies方法中可以看到，大概的工作就是**初始化处理器映射、视图解析**等。
+这个servlet自己持有的上下文默认实现类也是```XmlWebApplicationContext```。
+初始化完毕后，spring以与**servlet的名字相关**(此处不是简单的以servlet名为Key，而是通过一些转换，具体可自行查看源码)的属性为属性Key，也将其存到ServletContext中，以便后续使用。
+这样每个servlet就持有自己的上下文，即拥有自己独立的bean空间，同时各个servlet共享相同的bean，即**根上下文**定义的那些bean。
+
+#### ServletContext
+ServletContext实例可以做很多事情，例如通过调用getResourceAsStream（）方法来访问WEB-INF资源（xml配置等）。通常，在Servlet Spring应用程序的web.xml中定义的所有应用程序上下文都是Web应用程序上下文，这既适用于根Webapp上下文，也适用于Servlet的应用程序上下文。
+
+另外，取决于Web应用程序上下文的功能，可能会使你的应用程序更难测试，并且可能需要使用MockServletContext类进行测试。
+
+#### root WebApplicationContext 与 servlet WebApplicationContext
+servlet上下文和root上下文之间的关系：
+Spring允许你构建多级应用程序上下文层次结构，因此，如果当前应用程序上下文中不存在所需的bean，则会从父上下文中获取所需的bean。
+默认情况下，在Web应用程序中，有两个层次结构级别。
+这使你可以将某些服务作为整个应用程序的单例运行（Spring Security Bean和基本数据库访问服务通常位于此处），
+而另一项则作为相应服务中的单独服务运行，以避免Bean之间发生名称冲突。
+例如，**一个Servlet上下文将为网页提供服务，而另一个将实现无状态Web服务**。
 
 ### !!!Special Bean Types 特殊Bean类型
 ```DispatcherServlet```委托```特殊Bean```来处理请求以及提供适当响应。
